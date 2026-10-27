@@ -14,8 +14,8 @@ When approved, change an ADR's status to **Accepted** and record the date. A new
 ## Decision status update (2026-10-27)
 
 - 0001 — Accepted
-- 0002 — Proposed
-- 0003 — Proposed
+- 0002 — Accepted (implementation remains phased)
+- 0003 — Accepted (implementation deferred beyond Phase 1)
 - 0004 — Accepted
 - 0005 — Accepted
 - 0006 — Accepted

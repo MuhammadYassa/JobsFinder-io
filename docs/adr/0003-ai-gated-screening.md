@@ -1,6 +1,6 @@
 # ADR 0003 — Use AI for interpretation, not basic monitoring
 
-- **Status:** Proposed — awaiting owner approval
+- **Status:** Accepted — approved by project owner on 2026-10-27; implementation deferred beyond Phase 1
 - **Date:** 2026-10-27
 
 ## Context
@@ -13,7 +13,7 @@ Identifying new provider IDs is deterministic. Judging whether a role is softwar
 2. **Deterministic collection/change detection + conservative prefilter + structured AI eligibility reviewer:** auditable, inexpensive, testable; AI only on new/changed candidates.
 3. Keywords only: inexpensive but likely to miss unusual job titles and nuanced eligibility.
 
-## Proposed choice
+## Decision
 
 Option 2. Use explicit schema-validated AI responses with evidence, model/prompt/policy version and `needs_review` state. Separate US/international policy. False negatives matter more than retaining a few uncertain leads. Give fast alerts priority; generate cover letters later from verified facts, independent of monitoring throughput.
 

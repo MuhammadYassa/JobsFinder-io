@@ -33,6 +33,11 @@ flowchart TD
 
 ## Proposed package layout — **not implemented yet**
 
+Phase 1 currently implements `cli.py`, `registry.py`, and `persistence/` only,
+plus root `migrations/` and `tests/`. The layout below remains a future target.
+The Phase 1 source statuses in the registry specification take precedence over
+the future sequence's illustrative `pending_baseline` state.
+
 ```text
 src/jobsfinder_io/
   config/            # scheduling, private profile loading and validation

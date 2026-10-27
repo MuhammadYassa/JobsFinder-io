@@ -2,7 +2,7 @@
 
 **Guideline:** Small slices, demonstrable behavior, meaningful tests. Phases describe planned work, not implemented functionality. Every phase requires owner approval before coding.
 
-## Phase 0 — Design and guardrails (current)
+## Phase 0 — Design and guardrails
 
 - [ ] Review/approve scope, core architecture and remaining proposed decisions in `docs/adr/`.
 - [x] Approve modular monolith, SQLite-first storage, and Greenhouse-first integration (ADRs 0001, 0004, 0005).
@@ -15,14 +15,14 @@
 
 ## Phase 1 — Registry and local persistence
 
-See [`phase-1-registry-design.md`](phase-1-registry-design.md) for the draft entities, invariants, and acceptance tests.
+See [`phase-1-registry-design.md`](phase-1-registry-design.md) for the approved specification and implementation notes. Phase 1 is implemented; later phases remain planned.
 
 
-- [ ] Define typed employer, source, posting and poll-run entities.
-- [ ] Implement SQLAlchemy 2.x ORM models and SQLite session/transaction handling for the four approved tables.
-- [ ] Configure Alembic and create/test the initial four-table migration.
-- [ ] Add CLI commands to add/list/validate sources and inspect jobs.
-- [ ] Persist UTC timestamps and source identity safely, with unique constraints.
+- [x] Define typed employer, source, posting and poll-run entities.
+- [x] Implement SQLAlchemy 2.x ORM models and SQLite session/transaction handling for the four approved tables.
+- [x] Configure Alembic and create/test the initial four-table migration.
+- [x] Add CLI commands to add/list/validate sources and inspect jobs.
+- [x] Persist UTC timestamps and source identity safely, with unique constraints.
 
 **Exit:** Employer+source records survive restart; duplicate registrations are prevented; CLI and persistence tested without network.
 

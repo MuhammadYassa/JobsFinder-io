@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from jobsfinder-io!")
+"""JobsFinder.io: a personal employer registry and job monitoring foundation."""

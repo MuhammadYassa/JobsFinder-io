@@ -1,6 +1,6 @@
 # JobsFinder.io — Documentation Index
 
-**Project state:** Planning v0.2, October 27, 2026. Decisions explicitly accepted by the project owner are recorded as **Accepted**; others remain **Proposed**. No implementation is claimed by these documents.
+**Project state:** Phase 1 implemented, October 27, 2026. Local registry, four-table persistence, migrations, and argparse CLI are available. Later phases remain unimplemented. Decisions explicitly accepted by the owner are recorded as **Accepted**; others remain **Proposed**.
 
 | Document | Purpose |
 | --- | --- |
@@ -30,8 +30,8 @@
 - [ADR 0004: SQLite first](adr/0004-sqlite-first.md) — Accepted
 - [ADR 0005: Greenhouse first](adr/0005-greenhouse-first.md) — Accepted
 - [ADR 0006: SQLAlchemy 2.x + Alembic](adr/0006-sqlalchemy-alembic.md) — Accepted
-- [Phase 1 registry/database design draft](phase-1-registry-design.md) — Four initial tables and persistence stack accepted; remaining field/CLI details proposed
+- [Phase 1 registry/database specification](phase-1-registry-design.md) — Fields, relationships, constraints, acceptance tests, and argparse CLI approved and implemented
 
-ADRs 0002 and 0003 remain proposed pending their detailed design reviews.
+ADRs 0002 and 0003 are accepted by the owner. Their polling and screening implementation remains deferred to later phases.
 
 **Phase 1 schema scope:** exactly four tables initially: `employers`, `job_sources`, `postings`, `poll_runs`. Other entities in `data-model.md` are explicitly deferred. Database access uses SQLAlchemy 2.x, and schema evolution uses Alembic from the first migration (ADR 0006).

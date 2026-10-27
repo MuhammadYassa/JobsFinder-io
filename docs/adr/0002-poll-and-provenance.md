@@ -1,6 +1,6 @@
 # ADR 0002 — Poll verified public employer sources; keep date provenance
 
-- **Status:** Proposed — awaiting owner approval
+- **Status:** Accepted — approved by project owner on 2026-10-27; implementation remains phased
 - **Date:** 2026-10-27
 
 ## Context
@@ -13,7 +13,7 @@ Search-engine listings can surface days after a job appears. Public employer-spe
 2. **Direct public ATS source polling + independent employer discovery/backfill:** prompt detection for monitored employers, broader coverage growth.
 3. Unrestricted browser scraping of all pages: expensive, brittle, and risks violating site policies.
 
-## Proposed choice
+## Decision
 
 Option 2. Initially support official public Greenhouse/Lever/Ashby board feeds. Poll healthy validated sources roughly hourly with source-specific limits and backoff. Store `(source_id, external_posting_id)` as the core identity. Treat first successful scan as baseline; never confuse updates, search crawls or first-seen dates with verified original posting dates. Absence inferred only from successful complete scans under a documented closure policy.
 

@@ -1,17 +1,36 @@
 [project]
 name = "jobsfinder-io"
 version = "0.1.0"
-description = "Add your description here"
+description = "Personal employer registry and job monitoring foundation"
 readme = "README.md"
 authors = [
     { name = "Muhammmad Yassa", email = "muhammedyassa2004@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "alembic>=1.13,<2",
+    "sqlalchemy>=2.0,<3",
+]
 
 [project.scripts]
-jobsfinder-io = "jobsfinder_io:main"
+jobsfinder-io = "jobsfinder_io.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.13.6,<0.14.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "C4", "SIM"]
