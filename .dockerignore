@@ -1,0 +1,34 @@
+# Default-deny build context: only application/build/migration inputs enter it.
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!.python-version
+!README.md
+!alembic.ini
+!src/
+!src/**
+!migrations/
+!migrations/**
+
+# Exclude private/generated files even if placed under an allowed directory.
+**/.git
+**/.venv
+**/venv
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+**/.env
+**/.env.*
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*
+**/*.sqlite3
+**/*.sqlite3-*
+**/*.pem
+**/*.key
+**/data
+**/secrets
+**/private

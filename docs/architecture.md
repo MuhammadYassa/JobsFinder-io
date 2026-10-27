@@ -91,6 +91,12 @@ The directory layout is a target, not a request to generate empty packages. Add 
 
 Start as a local CLI + SQLite with **SQLAlchemy 2.x models and Alembic migrations from Phase 1** (ADRs 0004 and 0006). PostgreSQL is a possible later deployment choice, not a current requirement. Avoid scheduling hourly checks from a laptop that may be offline.
 
+Phase 3 adds one Docker Compose CLI service and GitHub Actions CI; see
+[ADR 0007](adr/0007-docker-and-ci.md). The container uses the existing SQLite path
+through a host-directory mount. Migrations remain explicit commands. CI runs
+offline tests, style checks, and image/migration/persistence checks without
+publishing or deploying. There is still no scheduler or additional service.
+
 ## Constraints
 
 - URLs and provider response fields are untrusted input. Sanitize, validate permitted hosts, enforce bounded payload sizes.

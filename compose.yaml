@@ -1,0 +1,12 @@
+services:
+  jobsfinder:
+    build: .
+    image: jobsfinder-io:local
+    # Set these to your host UID/GID on Linux if they differ from 1000.
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    volumes:
+      - type: bind
+        source: ${JOBSFINDER_DATA_DIR:-./data}
+        target: /app/data
+        bind:
+          create_host_path: false

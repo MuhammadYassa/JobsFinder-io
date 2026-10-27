@@ -1,6 +1,6 @@
 # Development Roadmap (Planning v0.3)
 
-**Guideline:** Small slices, demonstrable behavior, meaningful tests. Phases 1 and 2 are implemented; unchecked items remain planned. Every phase requires owner approval before coding.
+**Guideline:** Small slices, demonstrable behavior, meaningful tests. Phases 1–3 are implemented; unchecked items remain planned. Every phase requires owner approval before coding.
 
 ## Phase 0 — Design and guardrails
 
@@ -38,7 +38,24 @@ See the approved [Phase 2 design and implementation notes](phase-2-greenhouse-de
 
 **Exit:** Two repeated scans are idempotent; a synthetic new ID is identified exactly once; failed fetch does not close jobs.
 
-## Phase 3 — More employer sources and scheduled polling
+## Phase 3 — Docker and GitHub Actions CI
+
+The owner revised this phase to local container packaging and CI. See
+[ADR 0007](adr/0007-docker-and-ci.md) and the root README for usage.
+
+- [x] Build a Python/uv image with locked application dependencies and a non-root runtime.
+- [x] Add one Compose service with an existing host-directory mount for SQLite.
+- [x] Support explicit Alembic migrations and all existing CLI commands inside containers.
+- [x] Exclude local data, secrets, virtual environments, and unrelated files from build context.
+- [x] Configure CI for main pushes and pull requests: locked install, all offline tests, Ruff, image build, and container smoke checks.
+
+**Exit:** Docker/CI configuration is in place; local validation results are reported
+in the implementation handoff. No image publishing or deployment is configured.
+
+## Deferred — More employer sources and scheduled polling
+
+These were the previous Phase 3 proposal and are outside the approved Docker/CI
+slice. They still require separate authorization.
 
 - [ ] Add Lever and Ashby adapters with provider-specific pagination and field handling.
 - [ ] Add scheduler/CLI runner, per-source rate controls, backoff and health tracking.

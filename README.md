@@ -5,6 +5,9 @@ employer/source registry, SQLite persistence, and an argparse CLI. Phase 2 adds
 manual Greenhouse checks and safe posting comparisons. Screening, scheduling,
 discovery, and notifications remain deferred.
 
+Phase 3 adds Docker Compose and GitHub Actions CI. It does not add a scheduler
+or change collection behavior.
+
 Requires Python 3.12+ and uv. From the repository root:
 
 ```powershell
@@ -84,6 +87,51 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 ```
+
+Run with Docker Desktop (Linux containers) or Docker Engine with Compose:
+
+```powershell
+docker compose build
+# Create the data folder once; this PowerShell command also handles an existing folder.
+New-Item -ItemType Directory -Force data
+docker compose run --rm jobsfinder alembic upgrade head
+docker compose run --rm jobsfinder jobsfinder-io --help
+docker compose run --rm jobsfinder jobsfinder-io list-sources
+```
+
+On Linux/macOS, use `mkdir -p data` instead of `New-Item`. On Linux, also set
+`export LOCAL_UID=$(id -u)` and `export LOCAL_GID=$(id -g)` before running Compose
+so the non-root container user can write to your directory.
+
+Every existing CLI command works by placing `jobsfinder-io` after the service name:
+
+```powershell
+docker compose run --rm jobsfinder jobsfinder-io add-employer --name "Example" --official-domain example.com
+docker compose run --rm jobsfinder jobsfinder-io add-source --employer-id 1 --provider greenhouse --board-identifier example --careers-url https://example.com/careers
+docker compose run --rm jobsfinder jobsfinder-io validate-source 1 --confirm-official-association --confirm-public-access
+docker compose run --rm jobsfinder jobsfinder-io poll-source --source-id 1
+docker compose run --rm jobsfinder jobsfinder-io list-postings --source-id 1
+```
+
+Use a real, personally verified employer/board before polling; the example is
+synthetic. SQLite lives at `./data/jobsfinder.db` on your computer, mounted as
+`/app/data/jobsfinder.db`. Removing a container, running `docker compose down`, or
+rebuilding the image preserves that directory. Back it up separately and keep
+`--db` paths under `data/` when using Docker. To mount another existing directory,
+set `JOBSFINDER_DATA_DIR` to its absolute path. No database is copied into the image.
+
+The default container command prints CLI help and exits. Use `docker compose run
+--rm` for these one-shot commands; no background service or automatic migrations
+run. After code/dependency changes, rebuild and explicitly run `alembic upgrade
+head` again. The runtime image installs locked application dependencies without
+pytest/Ruff; run tests locally with uv or through CI.
+
+CI runs on pushes to `main` and pull requests. It installs Python and pinned uv,
+uses `uv.lock`, runs Ruff and the entire offline test suite (including Alembic
+migration tests), then builds the image and exercises container migrations and CLI
+persistence across separate containers. It has read-only repository permissions
+and does not publish images or deploy anything. See
+[Docker/CI design notes](docs/adr/0007-docker-and-ci.md).
 
 Tests migrate temporary databases and never use your registry. Installing
 dependencies requires package access once; tests need no internet or API keys.

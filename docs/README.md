@@ -1,6 +1,6 @@
 # JobsFinder.io — Documentation Index
 
-**Project state:** Phases 1 and 2 implemented. Local registry, four-table persistence, migrations, argparse CLI, and manual Greenhouse collection are available. Later phases remain unimplemented. Decisions explicitly accepted by the owner are recorded as **Accepted**; others remain **Proposed**.
+**Project state:** Phases 1–3 implemented. Local registry, four-table persistence, migrations, argparse CLI, manual Greenhouse collection, Docker Compose packaging, and CI configuration are available. Later features remain unimplemented. Decisions explicitly accepted by the owner are recorded as **Accepted**; others remain **Proposed**.
 
 | Document | Purpose |
 | --- | --- |
@@ -33,6 +33,7 @@
 - [ADR 0006: SQLAlchemy 2.x + Alembic](adr/0006-sqlalchemy-alembic.md) — Accepted
 - [Phase 1 registry implementation](../src/jobsfinder_io/registry.py) — Approved fields, persistence, and argparse CLI implemented; the earlier Phase 1 design file is absent from this checkout
 - [Phase 2 Greenhouse specification](phase-2-greenhouse-design.md) — Manual read-only collection and safe state comparison implemented
+- [ADR 0007: Docker and CI](adr/0007-docker-and-ci.md) — Approved Phase 3 scope and local container/CI operation
 
 ADRs 0002 and 0003 are accepted by the owner. Greenhouse polling is implemented in Phase 2; AI screening remains deferred.
 
