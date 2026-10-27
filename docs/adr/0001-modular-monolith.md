@@ -1,6 +1,6 @@
 # ADR 0001 — Start with a modular Python monolith
 
-- **Status:** Proposed — awaiting owner approval
+- **Status:** Accepted — approved by project owner
 - **Date:** 2026-10-27
 
 ## Context
@@ -13,7 +13,7 @@ JobsFinder.io is a personal research/monitoring utility. It needs independently 
 2. **One Python application with well-defined internal modules and a shared database:** easier iteration, testing and deployment; can split later if evidence demands it.
 3. One large script: fastest initial prototype, but difficult to test/extend across multiple ATS integrations and policies.
 
-## Proposed choice
+## Decision
 
 Option 2. Continue using `uv` and `src/jobsfinder_io/`, adding packages only when needed. Use CLI/scheduled entry points and typed component boundaries. Do not choose a separate queue/broker/server until required by workload or reliability tests.
 

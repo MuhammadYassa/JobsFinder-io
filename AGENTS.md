@@ -11,6 +11,7 @@ Success means earlier detection, accurate provenance, low false negatives, audit
 ## Project status and decision authority
 
 - **Planning stage**. Documents tagged **Proposed** are recommendations, NOT approved decisions. Do not treat them as permission to implement.
+- **Accepted foundations:** modular Python monolith (ADR 0001), SQLite first (ADR 0004), Greenhouse first (ADR 0005), SQLAlchemy 2.x + Alembic (ADR 0006), and exactly four initial domain tables: `employers`, `job_sources`, `postings`, `poll_runs`. Acceptance of an ADR is not blanket approval to start coding.
 - The human owner chooses architecture and approves implementation slices. Explain meaningful tradeoffs in plain language before major decisions. When a task is approved, implement only that slice.
 - Never silently add new external services, paid APIs, browser automation, authentication, dashboards, or autonomous agents.
 - Keep documentation consistent with code. If a proposed choice changes, update the appropriate ADR with rationale and consequences after approval.
@@ -27,7 +28,7 @@ Success means earlier detection, accurate provenance, low false negatives, audit
 
 - **Collectors** access official, public, permitted listings. They do not make AI calls and never submit applications.
 - **Registry/discovery** store and validate employers, source identifiers, provenance, and monitoring status.
-- **Normalization + persistence** turn provider-specific payloads into consistent records while preserving source-specific IDs and raw evidence when appropriate.
+- **Normalization + persistence** turn provider-specific payloads into consistent records while preserving source-specific IDs and raw evidence when appropriate. Persistence uses SQLAlchemy 2.x ORM models, SQLite for the first local deployment, and Alembic for version-controlled migrations. Phase 1 must not introduce extra domain tables.
 - **Change detection** compares actual employer/source posting identities, not search-index timestamps, and records successes/failures.
 - **Screening** performs conservative deterministic filtering, then evidence-grounded AI review on candidates. Unknown is a valid outcome.
 - **Delivery** sends notifications and generates reports only after validated state transitions, with no duplicate alerts.

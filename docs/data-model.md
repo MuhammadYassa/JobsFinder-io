@@ -1,6 +1,6 @@
-# Persistent Data Model (Proposed v0.1)
+# Persistent Data Model (Planning v0.3)
 
-All times stored in UTC (timezone-aware); convert to `America/New_York` for reports. This is a conceptual model, not a committed SQL schema.
+**Approved scope:** exactly four initial tables (`employers`, `job_sources`, `postings`, `poll_runs`) with **SQLAlchemy 2.x + Alembic** (ADR 0006) and local **SQLite** (ADR 0004). Specific field lists below remain draft until Phase 1 schema review. All timestamps use an explicit UTC convention at the application boundary; SQLite does not enforce timezone-aware datetime storage. Convert to `America/New_York` for reports.
 
 ## Core entities
 
@@ -24,7 +24,9 @@ All times stored in UTC (timezone-aware); convert to `America/New_York` for repo
 
 **Unique key:** `(source_id, external_posting_id)`; two different requisitions must never collapse merely because company/title/location match. Multi-location metadata is retained for one source post. Cross-source matching is an independent cautious review step.
 
-### `posting_observations` (initially optional)
+## Deferred entities — NOT part of the initial four-table schema
+
+### `posting_observations` (deferred)
 
 `id`, `posting_id`, `poll_run_id`, `observed_at`, `content_hash`, `raw_payload_ref`/small sanitized JSON, `change_kind`, `evidence`. To keep costs low, store changed snapshots and lightweight observations rather than duplicating every unchanged full description hourly.
 
@@ -65,7 +67,7 @@ Track `posting_id`, manually entered `applied_at`, status, deadlines and notes. 
 
 ## To decide before Phase 1
 
-- SQLite first vs. PostgreSQL immediately; which ORM/migration tool to introduce and when.
+- SQLite first **and SQLAlchemy 2.x + Alembic** are **accepted** (ADRs 0004 and 0006). The first migration must create only the four approved tables.
 - Whether raw provider payloads are kept in DB or compact local object files.
 - Closure policy (`2` complete misses is a candidate, **not** an accepted rule).
 - How to represent an employer with multiple regional boards or mirrored ATS sites.

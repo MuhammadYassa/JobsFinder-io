@@ -15,7 +15,7 @@ Tests must demonstrate both a **correct new-job alert** and **safe behavior duri
 
 ## Integration tests
 
-- Temporary DB: unique constraints, multi-source jobs, idempotent upsert, transaction rollback and crash/retry recovery.
+- Temporary DB: Alembic `upgrade head` on a clean SQLite database creates the four approved domain tables; verify SQLAlchemy unique constraints, multi-source jobs, idempotent upsert, transaction rollback and crash/retry recovery. (Alembic adds its own `alembic_version` bookkeeping table.)
 - Source collector with mocked HTTP pages: verify complete pagination, first baseline and subsequent change detection.
 - End-to-end offline fixture: source -> normalization -> persistence -> screening stub -> alert stub.
 - Optional slow opt-in live API smoke check only with source-policy compliance; live calls never required for normal unit tests.
@@ -29,7 +29,7 @@ Tests must demonstrate both a **correct new-job alert** and **safe behavior duri
 
 ## Suggested tools (install as milestones require)
 
-- `pytest` for unit/integration tests, `ruff` for lint/format, `httpx` mocking or local test server, and lightweight temporary SQLite DB.
+- `pytest` for unit/integration tests, `ruff` for lint/format, `httpx` mocking or local test server, SQLAlchemy 2.x for ORM access, Alembic for schema migrations, and lightweight temporary SQLite DB.
 - `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .` **only once dependencies and configuration have been added**.
 
 ## Definition of done

@@ -1,6 +1,6 @@
 # JobsFinder.io — Documentation Index
 
-**Project state:** Planning v0.1, October 2026. Architectural decisions are **proposed** until explicitly accepted by the project owner. No implementation is claimed by these documents.
+**Project state:** Planning v0.2, October 27, 2026. Decisions explicitly accepted by the project owner are recorded as **Accepted**; others remain **Proposed**. No implementation is claimed by these documents.
 
 | Document | Purpose |
 | --- | --- |
@@ -23,3 +23,15 @@
 - [Ashby Public Job Posting API](https://developers.ashbyhq.com/docs/public-job-posting-api)
 - [Lever Postings API](https://github.com/lever/postings-api)
 - [uv Project Guide](https://docs.astral.sh/uv/guides/projects/)
+
+## Approved foundation decisions (2026-10-27)
+
+- [ADR 0001: Modular monolith](adr/0001-modular-monolith.md) — Accepted
+- [ADR 0004: SQLite first](adr/0004-sqlite-first.md) — Accepted
+- [ADR 0005: Greenhouse first](adr/0005-greenhouse-first.md) — Accepted
+- [ADR 0006: SQLAlchemy 2.x + Alembic](adr/0006-sqlalchemy-alembic.md) — Accepted
+- [Phase 1 registry/database design draft](phase-1-registry-design.md) — Four initial tables and persistence stack accepted; remaining field/CLI details proposed
+
+ADRs 0002 and 0003 remain proposed pending their detailed design reviews.
+
+**Phase 1 schema scope:** exactly four tables initially: `employers`, `job_sources`, `postings`, `poll_runs`. Other entities in `data-model.md` are explicitly deferred. Database access uses SQLAlchemy 2.x, and schema evolution uses Alembic from the first migration (ADR 0006).

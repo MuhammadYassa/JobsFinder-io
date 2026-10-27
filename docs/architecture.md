@@ -82,7 +82,7 @@ The directory layout is a target, not a request to generate empty packages. Add 
 
 ## Deployment trajectory
 
-Start as local CLI + SQLite for fast validation; move to persistent scheduled hosting/database when continuous monitoring is required. PostgreSQL and migrations are a proposed production target, not necessary for the first collector. Avoid scheduling hourly checks from a laptop that may be offline.
+Start as a local CLI + SQLite with **SQLAlchemy 2.x models and Alembic migrations from Phase 1** (ADRs 0004 and 0006). PostgreSQL is a possible later deployment choice, not a current requirement. Avoid scheduling hourly checks from a laptop that may be offline.
 
 ## Constraints
 
