@@ -33,10 +33,12 @@ flowchart TD
 
 ## Proposed package layout — **not implemented yet**
 
-Phase 1 currently implements `cli.py`, `registry.py`, and `persistence/` only,
-plus root `migrations/` and `tests/`. The layout below remains a future target.
-The Phase 1 source statuses in the registry specification take precedence over
-the future sequence's illustrative `pending_baseline` state.
+Phases 1 and 2 implement `cli.py`, `registry.py`, `persistence/`,
+`sources/greenhouse.py`, and `ingestion/polling.py`, plus root `migrations/` and
+`tests/`. The broader layout below remains a future target. Current model source
+statuses take precedence over the future sequence's illustrative `pending_baseline`
+state. The approved [Phase 2 design](phase-2-greenhouse-design.md) describes the
+implemented manual poll flow and its four-table limits.
 
 ```text
 src/jobsfinder_io/

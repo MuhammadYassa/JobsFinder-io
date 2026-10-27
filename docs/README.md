@@ -1,12 +1,13 @@
 # JobsFinder.io — Documentation Index
 
-**Project state:** Phase 1 implemented, October 27, 2026. Local registry, four-table persistence, migrations, and argparse CLI are available. Later phases remain unimplemented. Decisions explicitly accepted by the owner are recorded as **Accepted**; others remain **Proposed**.
+**Project state:** Phases 1 and 2 implemented. Local registry, four-table persistence, migrations, argparse CLI, and manual Greenhouse collection are available. Later phases remain unimplemented. Decisions explicitly accepted by the owner are recorded as **Accepted**; others remain **Proposed**.
 
 | Document | Purpose |
 | --- | --- |
 | [product-requirements.md](product-requirements.md) | Goals, boundaries, priorities, and success metrics |
 | [architecture.md](architecture.md) | Component boundaries and end-to-end data flow |
 | [roadmap.md](roadmap.md) | Development milestones with acceptance criteria |
+| [phase-2-greenhouse-design.md](phase-2-greenhouse-design.md) | Approved Greenhouse collector specification, implementation details, and limits |
 | [data-model.md](data-model.md) | Initial persistent entities and identity rules |
 | [source-monitoring.md](source-monitoring.md) | ATS adapters, discovery, polling, and freshness semantics |
 | [ai-screening.md](ai-screening.md) | Candidate policies, evidence, AI workflow, and outputs |
@@ -30,8 +31,9 @@
 - [ADR 0004: SQLite first](adr/0004-sqlite-first.md) — Accepted
 - [ADR 0005: Greenhouse first](adr/0005-greenhouse-first.md) — Accepted
 - [ADR 0006: SQLAlchemy 2.x + Alembic](adr/0006-sqlalchemy-alembic.md) — Accepted
-- [Phase 1 registry/database specification](phase-1-registry-design.md) — Fields, relationships, constraints, acceptance tests, and argparse CLI approved and implemented
+- [Phase 1 registry implementation](../src/jobsfinder_io/registry.py) — Approved fields, persistence, and argparse CLI implemented; the earlier Phase 1 design file is absent from this checkout
+- [Phase 2 Greenhouse specification](phase-2-greenhouse-design.md) — Manual read-only collection and safe state comparison implemented
 
-ADRs 0002 and 0003 are accepted by the owner. Their polling and screening implementation remains deferred to later phases.
+ADRs 0002 and 0003 are accepted by the owner. Greenhouse polling is implemented in Phase 2; AI screening remains deferred.
 
 **Phase 1 schema scope:** exactly four tables initially: `employers`, `job_sources`, `postings`, `poll_runs`. Other entities in `data-model.md` are explicitly deferred. Database access uses SQLAlchemy 2.x, and schema evolution uses Alembic from the first migration (ADR 0006).

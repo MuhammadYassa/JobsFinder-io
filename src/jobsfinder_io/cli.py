@@ -1,4 +1,4 @@
-"""Offline registry commands. Run Alembic before opening the registry."""
+"""Registry commands and manual public Greenhouse checks."""
 
 import argparse
 import sys
@@ -7,6 +7,7 @@ from pathlib import Path
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from jobsfinder_io.ingestion.polling import poll_source
 from jobsfinder_io.persistence.database import make_engine
 from jobsfinder_io.registry import (
     RegistryError,
@@ -38,6 +39,10 @@ def build_parser() -> argparse.ArgumentParser:
     validation.add_argument("--confirm-public-access", action="store_true")
     postings = commands.add_parser("list-postings")
     postings.add_argument("--source-id", type=int)
+    poll = commands.add_parser(
+        "poll-source", help="Manually check a validated Greenhouse source"
+    )
+    poll.add_argument("--source-id", type=int, required=True)
     return parser
 
 
@@ -89,6 +94,17 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     engine = make_engine(args.db)
     try:
+        if args.command == "poll-source":
+            summary = poll_source(engine, args.source_id)
+            print(
+                f"{summary.status} | poll={summary.run_id} | observed={summary.observed} | "
+                f"baseline={summary.baseline} | new={summary.new} | updated={summary.updated} | "
+                f"unchanged={summary.unchanged} | missing={summary.missing} | "
+                f"closed={summary.closed} | reappeared={summary.reappeared} | "
+                f"enrichment_failed={summary.enrichment_failed}"
+                + (f" | {summary.error_code}" if summary.error_code else "")
+            )
+            return 0 if summary.status == "complete_success" else 1
         with Session(engine) as session, session.begin():
             run(args, session)
     except RegistryError as exc:

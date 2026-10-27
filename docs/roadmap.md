@@ -1,6 +1,6 @@
 # Development Roadmap (Planning v0.3)
 
-**Guideline:** Small slices, demonstrable behavior, meaningful tests. Phases describe planned work, not implemented functionality. Every phase requires owner approval before coding.
+**Guideline:** Small slices, demonstrable behavior, meaningful tests. Phases 1 and 2 are implemented; unchecked items remain planned. Every phase requires owner approval before coding.
 
 ## Phase 0 — Design and guardrails
 
@@ -15,7 +15,7 @@
 
 ## Phase 1 — Registry and local persistence
 
-See [`phase-1-registry-design.md`](phase-1-registry-design.md) for the approved specification and implementation notes. Phase 1 is implemented; later phases remain planned.
+Phase 1 is implemented; see the [registry code](../src/jobsfinder_io/registry.py), models, migrations, and root README. The earlier Phase 1 design file is absent from this checkout.
 
 
 - [x] Define typed employer, source, posting and poll-run entities.
@@ -28,11 +28,13 @@ See [`phase-1-registry-design.md`](phase-1-registry-design.md) for the approved 
 
 ## Phase 2 — First ATS collector and baseline monitoring
 
-- [ ] Implement a read-only **Greenhouse Job Board API** collector.
-- [ ] Normalize listings and preserve source IDs, links and original raw evidence.
-- [ ] Define complete/incomplete poll results, retries, timeouts, and initial baseline.
-- [ ] Implement new/updated/missing/reappeared state comparison.
-- [ ] Write fixture-based regression tests.
+See the approved [Phase 2 design and implementation notes](phase-2-greenhouse-design.md).
+
+- [x] Implement a read-only **Greenhouse Job Board API** collector.
+- [x] Normalize listings and preserve source IDs, links, source timestamps, and date provenance in the existing fields. Raw JSON retention is deferred because the approved schema has no snapshot field.
+- [x] Define complete/incomplete poll results, retries, timeouts, and initial baseline.
+- [x] Implement new/updated/missing/reappeared state comparison.
+- [x] Write fixture-based regression tests.
 
 **Exit:** Two repeated scans are idempotent; a synthetic new ID is identified exactly once; failed fetch does not close jobs.
 

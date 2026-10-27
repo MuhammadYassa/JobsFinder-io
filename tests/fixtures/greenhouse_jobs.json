@@ -1,0 +1,25 @@
+{
+  "jobs": [
+    {
+      "id": 101,
+      "internal_job_id": 900,
+      "requisition_id": "REQ-7",
+      "title": "Software Engineer",
+      "absolute_url": "https://job-boards.greenhouse.io/example/jobs/101",
+      "content": "&lt;p&gt;Build software &amp;amp; learn.&lt;/p&gt;",
+      "updated_at": "2026-10-01T12:00:00Z",
+      "location": {"name": "New York"}
+    },
+    {
+      "id": 102,
+      "internal_job_id": 900,
+      "requisition_id": "REQ-7",
+      "title": "Software Engineer",
+      "absolute_url": "https://job-boards.greenhouse.io/example/jobs/102",
+      "content": "<p>Build software &amp; learn.</p>",
+      "updated_at": "2026-10-01T12:00:00Z",
+      "location": {"name": "New York"}
+    }
+  ],
+  "meta": {"total": 2}
+}

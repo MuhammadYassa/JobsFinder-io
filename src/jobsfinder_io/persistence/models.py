@@ -1,4 +1,4 @@
-"""The four Phase 1 tables. Posting and poll capture belong to Phase 2."""
+"""The four application tables shared by the registry and Greenhouse collector."""
 
 from datetime import UTC, datetime
 
