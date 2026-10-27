@@ -1,0 +1,1 @@
+An AI-powered job discovery and monitoring system that tracks employer career sites, detects new software engineering openings, and evaluates opportunities against personalized eligibility criteria.
