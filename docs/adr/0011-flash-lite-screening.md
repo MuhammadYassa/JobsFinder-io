@@ -62,7 +62,8 @@ Successful-result caching additionally requires the current `validation_version`
 An offline replay can append corrected records with original generation prompt,
 request key and prior-result ID, without claiming a new model response. Invalid
 replays append deferred review receipts and remain queued. Old history is kept.
-See the [accuracy report](../flash-lite-accuracy-evaluation.md); AI stays disabled.
+The [final accuracy report](../flash-lite-final-accuracy.md) retains the completed
+findings. AI remained disabled at this intermediate stage; activation is recorded below.
 
 ## Completed controlled evaluation
 

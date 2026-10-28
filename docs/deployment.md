@@ -4,6 +4,39 @@ Use one always-on computer or Linux Docker host. Production SQLite must remain
 on persistent local storage outside OneDrive or other sync folders. GitHub
 Actions runs tests only. No schedule or remote deployment is installed here.
 
+## Azure deployment readiness
+
+The existing Docker/Compose workflow fits a single always-on Azure Linux VM.
+No Azure resources, image registry, deployment automation or schedules are
+provisioned by this repository. The host has not been verified; complete these
+steps before calling the deployment operational:
+
+1. Use persistent managed-disk storage for `/var/lib/jobsfinder`. Never put SQLite
+   on the VM's temporary/resource disk or a shared network filesystem. Microsoft
+   documents [managed-disk persistence and temporary-disk loss](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/faq).
+   Keep one scheduler host per database; configure disk ownership as below.
+2. Stop local writers and transfer a consistent SQLite backup plus protected
+   private configuration. Preserve the complete database, including employer
+   registry, postings/history, screening cache/queue, quotas and delivery receipts.
+   Retain original backups. Do not replace it with a new empty database. Do not
+   run local and Azure workers independently against divergent production copies.
+3. Configure the host `.env` with Linux paths and UID/GID. Keep credentials and
+   profiles outside the image and Git. Allow HTTPS to configured public providers
+   and authenticated SMTP to the configured mail host. Azure documents
+   [authenticated SMTP on port 587](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-network/troubleshoot-outbound-smtp-connectivity);
+   host firewall and provider acceptance still need verification.
+4. Build the final image on the host. With both schedules stopped, run the
+   migration, health and local report commands below. Review pending/uncertain
+   outbox state before enabling delivery. Send a test email only when authorized
+   and confirm inbox receipt. Check model access and actual quota before enabling
+   paid screening; repository defaults are application limits, not account proof.
+5. Install the two tick schedules only when ready, configure log rotation and
+   protected backups, and verify restore into a separate directory. Confirm
+   persistent storage is mounted before workers run after a host restart.
+
+The repository is prepared for this deployment path; persistent disk, networking,
+credentials, image execution and scheduler behavior require target-host checks.
+
 ## Configure a Linux host
 
 1. Install Docker Engine and Compose; put the checkout at `/opt/jobsfinder`.
@@ -12,13 +45,13 @@ Actions runs tests only. No schedule or remote deployment is installed here.
    journals and process locks live there. Protect directories/files with modes
    700/600. On Linux, an administrator can use `install -d -m 700 -o UID -g GID`
    for each directory, replacing UID/GID with the actual runtime account IDs.
-3. Copy `.env.example` to ignored `.env`. Set
+3. For a new host, copy `.env.example` to ignored `.env`; preserve existing configuration. Set
    `JOBSFINDER_DATA_DIR=/var/lib/jobsfinder`, `LOCAL_UID`/`LOCAL_GID` to that account,
    `JOBSFINDER_CANDIDATES=/app/data/private/candidates.json`, and
    `JOBSFINDER_REPORT_DIR=/app/data/reports`.
    Protect the populated `.env` with `chmod 600 .env`.
 4. The [final pilot passed](activation-pilot.md): AI defaults to enabled, with
-   `GEMINI_MAX_CALLS=20`, `GEMINI_DAILY_LIMIT=20`, retry reserve2 and batch size10.
+   `GEMINI_MAX_CALLS=20`, `GEMINI_DAILY_LIMIT=20`, retry reserve 2 and batch size 10.
    Put the private profile at `/var/lib/jobsfinder/private/profile.json` and set
    `JOBSFINDER_PROFILE=/app/data/private/profile.json`. To operate without AI,
    explicitly set `GEMINI_BATCH_ENABLED=false` and `GEMINI_MAX_CALLS=0`.
@@ -137,10 +170,10 @@ migrate, inspect health, then resume. Never migrate during active workflows.
 For live backups use SQLite's backup API instead of copying an active database.
 Protect backups and test restoring into a separate data directory.
 
-See [non-AI verification](non-ai-verification.md) for actual checks and remaining
-activation needs. SMTP credentials and an always-on host are required for
-unattended email operation. [Gemini status](gemini-reliability.md) is unchanged;
-screening remains disabled and is separate from these workflows.
+See [final non-AI verification](non-ai-final-verification.md) for historical checks.
+SMTP credentials and an always-on host are required for unattended email operation.
+The [final pilot](activation-pilot.md) approved enabled, capped screening
+configuration; its separate host schedule remains a deployment step.
 
 The [final non-AI verification](non-ai-final-verification.md) includes one Gmail
 test accepted over authenticated STARTTLS, real discovery growth, report-content
@@ -156,17 +189,15 @@ overrides can enforce AI-off without rewriting a separately maintained `.env`:
 docker compose run --rm -T -e GEMINI_API_KEY= -e GEMINI_MAX_CALLS=0 -e GEMINI_BATCH_ENABLED=false jobsfinder jobsfinder-io run-due
 ```
 
-Current discovery settings remain operator-owned. The verification directory
-contains supplemental directory/import inputs; they were not silently installed
-as the daily configuration. Configure reviewed inputs for continued registry
-growth. A successful test pass does not turn a finite import into internet-wide
-employer discovery.
+Discovery settings remain operator-owned. Configure reviewed daily inputs for
+continued registry growth; a finite import cannot provide internet-wide coverage.
 
 ## Approved batch screening, enabled in configuration
 
 The multi-job implementation is described in [batch screening](gemini-batch-screening.md).
 The [final pilot](activation-pilot.md) passed and the owner approved enabled
-defaults: true/20,20daily,2reserved,10jobs/batch,8batches/session. `run-due` only maintains the screening queue;
+defaults: enabled, 20 calls/day, 2 reserved, 10 jobs/batch, 8 batches/session.
+`run-due` maintains the screening queue without calling Gemini;
 polling, email and reports do not wait for Gemini.
 
 When deploying the always-on host, a second five-minute cron entry can run
@@ -183,6 +214,5 @@ eligibility labels. The separate screening lock prevents two screeners from
 overlapping without holding the monitoring lock during API waits. Stop **both**
 jobs before migrations/backups/upgrades, and configure quota limits from AI Studio.
 The enabled configuration is prepared; installing both permanent tick commands
-and provisioning persistent hosting remain deployment steps. Rebuild the image
-on the target host. Current smoke checks did not rebuild locally because Docker
-Desktop was stopped.
+and provisioning persistent hosting remain deployment steps. Build the final
+image on the target host before starting either schedule.

@@ -9,11 +9,12 @@
 
 **Approved scope:** exactly four initial tables (`employers`, `job_sources`, `postings`, `poll_runs`) with **SQLAlchemy 2.x + Alembic** (ADR 0006) and local **SQLite** (ADR 0004). Field lists below describe broader future design; the approved Phase 1 specification takes precedence. All timestamps use an explicit UTC convention at the application boundary; SQLite does not enforce timezone-aware datetime storage. Convert to `America/New_York` for reports.
 
-**Phase 1 implementation:** The approved field lists and identity constraints in
-[phase-1-registry-design.md](phase-1-registry-design.md) take precedence over this
-broader future design. In particular, the implemented source key is
+**Implemented schema:** See the [ORM models](../src/jobsfinder_io/persistence/models.py)
+and [versioned migrations](../migrations/versions/) for current fields and constraints;
+[ADR 0008](adr/0008-integrated-personal-workflow.md) records the workflow extension.
+These take precedence over this historical design. The implemented source key is
 `(provider, board_identifier)` without employer ID. Additional fields and entities
-below are deferred; they are not a description of the current schema.
+below describe design intent; they are not a description of the current schema.
 
 ## Core entities
 

@@ -44,10 +44,13 @@ unrelated `.env` settings were preserved. Do not copy private files into images/
 
 Checks: 8 existing scheduler/DST tests passed; offline temporary-database smoke
 verified enabled CLI routing, report slots, repeated-tick session cap and 20/2
-daily quota behavior. Ruff and `docker compose config --quiet` passed. Docker
-Desktop was stopped, so rebuilding the updated local image could not run. Build
-the image on the deployment host before starting the worker. No additional API
-calls or emails were used for configuration checks.
+daily quota behavior. Ruff and `docker compose config --quiet` passed. After
+Docker Desktop was started, the updated image built successfully. An isolated,
+network-disabled container smoke check verified UID 1000, screening limits,
+CLI defaults, migrations to a temporary SQLite database, migration consistency
+and health. No private profile or `.env` was present in the image. Production
+storage was not mounted. Build the image on the deployment host before starting
+the worker. No additional API calls or emails were used for configuration checks.
 
 No cloud server or permanent OS schedule was provisioned. Azure deployment needs
 an always-on Docker host, persistent data storage, private configuration and the

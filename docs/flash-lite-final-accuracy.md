@@ -1,6 +1,8 @@
 # Completed Flash-Lite accuracy verification
 
-Screening remains disabled: saved `GEMINI_BATCH_ENABLED=false`, `GEMINI_MAX_CALLS=0`.
+Historical evaluation status: screening was disabled during these checks.
+The later [activation pilot](activation-pilot.md) approved enabled, capped
+configuration; permanent host schedules remain pending.
 The system is suitable for a capped pilot with human review, **not independent
 eligibility decisions or unattended disposal of uncertain jobs**. No schedules,
 notifications, deployment, paid-service activation, commits or pushes occurred.

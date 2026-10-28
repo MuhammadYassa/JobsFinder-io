@@ -8,8 +8,9 @@
 > does not establish broad production accuracy.
 
 Current provider: Google Gemini via `google-genai`, default `gemini-3.5-flash-lite`.
-The [Flash-Lite live verification](flash-lite-live-verification.md) records one
-successful batch and remaining accuracy concerns. Scheduled AI stays disabled.
+The [final accuracy evaluation](flash-lite-final-accuracy.md)
+and [activation pilot](activation-pilot.md) record the completed checks: capped AI
+configuration is enabled, with host scheduling still pending.
 See [ADR 0011](adr/0011-flash-lite-screening.md) for the primary model and quotas.
 `screen_jobs()` calls `screen_batch()`; the SDK parses its structured response,
 and `validate_result()` independently checks each job's

@@ -1,10 +1,10 @@
-# System Architecture (Proposed v0.1)
+# System architecture
 
 > Implementation update: the integrated workflow is now implemented in
 > `sources/`, `discovery/`, `ingestion/`, `screening/`, `reporting/` and
 > `operations/`. [ADR 0008](adr/0008-integrated-personal-workflow.md) supersedes
-> deferred implementation/scheduler statements below. The layout below is the
-> original design, not the current file tree. No server or dashboard was added.
+> earlier phase limits. The package map below describes the current tree.
+> No server or dashboard was added.
 
 ## Style
 
@@ -37,43 +37,33 @@ flowchart TD
 | Screening | Policy checks, AI review, evidence and uncertainty | Editing raw source records |
 | Delivery | Idempotent notifications and reports | Changing application status without user input |
 
-## Proposed package layout — **not implemented yet**
-
-Phases 1 and 2 implement `cli.py`, `registry.py`, `persistence/`,
-`sources/greenhouse.py`, and `ingestion/polling.py`, plus root `migrations/` and
-`tests/`. The broader layout below remains a future target. Current model source
-statuses take precedence over the future sequence's illustrative `pending_baseline`
-state. The approved [Phase 2 design](phase-2-greenhouse-design.md) describes the
-implemented manual poll flow and its four-table limits.
+## Current package layout
 
 ```text
 src/jobsfinder_io/
-  config/            # scheduling, private profile loading and validation
-  domain/            # typed entities, enums, business rules
-  discovery/         # employer discovery and source validation
-  sources/           # greenhouse.py, lever.py, ashby.py, common interface
-  ingestion/         # normalization, snapshots, change detection
-  persistence/       # database models and repositories
-  screening/         # deterministic checks, AI provider, policies
-  delivery/          # alerts, digests, cover letters
-  jobs/              # orchestration/scheduled entry points
-  cli.py             # inspect, poll, rescreen, report commands
-
-tests/
-  fixtures/          # synthetic/recorded, redacted provider responses
-  unit/
-  integration/
+  cli.py             # argparse commands and environment configuration
+  registry.py        # employer/source registration and validation
+  discovery/         # official-page discovery, inputs and durable rotation
+  sources/           # Greenhouse, Lever/global/EU and Ashby adapters
+  ingestion/         # polling, snapshots and safe reconciliation
+  persistence/       # SQLAlchemy models and database connections
+  screening/         # Gemini batches, evidence, queue, quotas and sessions
+  reporting/         # reports and independent non-AI reporting
+  delivery/          # local artifacts, SMTP and optional Telegram
+  operations/        # run-due orchestration and report slots
+  relevance.py       # conservative relevance checks
+  runlock.py         # process locks and interrupted-work recovery
+migrations/          # versioned Alembic schema
+tests/               # offline unit/integration regressions and fixtures
 ```
-
-The directory layout is a target, not a request to generate empty packages. Add folders only when a milestone needs them.
 
 ## Important sequences
 
 ### New monitored source
 
 1. Validate provider, employer ownership, accessible endpoint and terms/permissions.
-2. Save source with status `pending_baseline`.
-3. Perform a **complete successful baseline scan**; persist all visible postings with `first_seen_at` and `discovery_type=baseline`.
+2. Register and validate the source before polling; the first successful complete poll establishes its baseline.
+3. Perform a **complete successful baseline scan**; persist all visible postings with `first_seen_at` and `discovery_kind=baseline`.
 4. Do not claim these already-visible listings were published during the last polling interval.
 5. Subsequent complete scans identify newly observed IDs; queue relevant postings for screening.
 
@@ -126,5 +116,6 @@ unknown domains require confirmation. See [deployment](deployment.md).
 Optional screening uses a durable per-revision queue and multi-job structured
 requests, with separate 09:30/19:30 New York sessions. Its own process lock allows
 polling to proceed during API waits; SQLite transactions remain short. Existing
-workflow tables hold queue, request, token-cache and Pacific quota state. AI is
-disabled by default. See [ADR 0010](adr/0010-multi-job-gemini-screening.md).
+workflow tables hold queue, request, token-cache and Pacific quota state. AI configuration defaults to enabled with a 20-call daily application cap;
+activation requires the separate host schedule. See [final pilot](activation-pilot.md)
+and [ADR 0011](adr/0011-flash-lite-screening.md).

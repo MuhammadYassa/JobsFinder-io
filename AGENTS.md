@@ -2,33 +2,33 @@
 
 This is the primary instruction file for AI coding agents working on JobsFinder.io. Read this file, `docs/README.md`, `docs/roadmap.md`, and relevant architecture/ADR documents before modifying code.
 
-## Mission
+## Purpose
 
-Build a reliable, inexpensive **personal** Python system that discovers employers, monitors publicly accessible career feeds for new software-development jobs, screens them against configurable US and international eligibility rules, and sends actionable alerts/reports. The system **does not submit applications or contact employers**.
+Maintain the reliable, inexpensive **personal** Python system that discovers employers, monitors publicly accessible career feeds for new software-development jobs, screens them against configurable US and international eligibility rules, and sends actionable alerts/reports. The system **does not submit applications or contact employers**.
 
 Success means earlier detection, accurate provenance, low false negatives, auditability, and a maintainable system—not sophisticated agent orchestration or a public SaaS product.
 
 ## Project status and decision authority
 
-- **Planning stage**. Documents tagged **Proposed** are recommendations, NOT approved decisions. Do not treat them as permission to implement.
-- **Accepted foundations:** modular Python monolith (ADR 0001), SQLite first (ADR 0004), Greenhouse first (ADR 0005), SQLAlchemy 2.x + Alembic (ADR 0006), and exactly four initial domain tables: `employers`, `job_sources`, `postings`, `poll_runs`. Acceptance of an ADR is not blanket approval to start coding.
-- The human owner chooses architecture and approves implementation slices. Explain meaningful tradeoffs in plain language before major decisions. When a task is approved, implement only that slice.
+- Development is complete; the repository is being prepared for Azure deployment. Host provisioning and permanent schedules remain deployment steps. Historical documents tagged **Proposed** are design context, not implementation authorization.
+- **Accepted foundations:** modular Python monolith, SQLite, SQLAlchemy 2.x, Alembic, Docker and CLI scheduling. ADR 0008 extends the original four-table schema with workflow tables; ADRs 0009–0011 record Gemini screening and approved capped activation. Preserve both migrations and all existing history.
+- The human owner chooses architecture and approves maintenance scope. Explain meaningful tradeoffs before major decisions and implement only the requested change.
 - Never silently add new external services, paid APIs, browser automation, authentication, dashboards, or autonomous agents.
 - Keep documentation consistent with code. If a proposed choice changes, update the appropriate ADR with rationale and consequences after approval.
 
 ## Current repository and tooling
 
-- Python >=3.12; `uv` project with `pyproject.toml` and `src/jobsfinder_io/` already initialized.
+- Python >=3.12; dependencies in `pyproject.toml`/`uv.lock`, application in `src/jobsfinder_io/`.
 - Prefer `uv run ...` and `uv add ...` to managing a separate requirements file.
 - Before editing, inspect the current tree and `pyproject.toml`; never assume packages or commands already exist.
-- Add pytest and Ruff only when the owner approves a coding slice. Once configured, expected checks are `uv run pytest`, `uv run ruff check .`, and `uv run ruff format --check .`.
+- pytest and Ruff are configured. For executable changes, run relevant tests and style checks: `uv run pytest`, `uv run ruff check .`, and `uv run ruff format --check .`. Scale checks to the requested scope; documentation-only cleanup does not need a full test cycle.
 - Prefer type hints, small well-named functions, explicit return types at interfaces, and clear exceptions. Keep module interfaces simple and testable.
 
-## Architecture boundaries (proposed; see ADRs)
+## Architecture boundaries (see ADRs)
 
 - **Collectors** access official, public, permitted listings. They do not make AI calls and never submit applications.
 - **Registry/discovery** store and validate employers, source identifiers, provenance, and monitoring status.
-- **Normalization + persistence** turn provider-specific payloads into consistent records while preserving source-specific IDs and raw evidence when appropriate. Persistence uses SQLAlchemy 2.x ORM models, SQLite for the first local deployment, and Alembic for version-controlled migrations. Phase 1 must not introduce extra domain tables.
+- **Normalization + persistence** turn provider-specific payloads into consistent records while preserving source-specific IDs and raw evidence when appropriate. Persistence uses SQLAlchemy 2.x ORM models, SQLite on persistent local disk, and Alembic for version-controlled migrations. Schema changes require a migration and an approved maintenance task.
 - **Change detection** compares actual employer/source posting identities, not search-index timestamps, and records successes/failures.
 - **Screening** performs conservative deterministic filtering, then evidence-grounded AI review on candidates. Unknown is a valid outcome.
 - **Delivery** sends notifications and generates reports only after validated state transitions, with no duplicate alerts.
@@ -49,15 +49,21 @@ Success means earlier detection, accurate provenance, low false negatives, audit
 
 ## AI-assisted development workflow
 
-For each approved development slice:
+For each approved maintenance task:
 1. Read relevant docs/code; briefly explain existing behavior and the targeted change.
 2. State a small implementation plan and any unresolved decision or changed assumption.
-3. Write or update tests, including failure paths and regression fixtures.
+3. For behavior changes, write or update tests, including failure paths and regression fixtures.
 4. Implement the smallest coherent solution. Avoid overengineering, broad refactors, hidden network calls, and unnecessary dependencies.
-5. Run the available tests and style checks; state precisely which ran and which couldn't run.
+5. Run checks appropriate to the change; state precisely which ran and which couldn't run. Do not run large verification cycles for documentation-only cleanup.
 6. Provide a short handoff: changed files, important functions, rationale, tradeoffs, failure scenarios, and any unresolved issues.
 7. Include a **learning checkpoint**: help the owner trace the key code and explain it independently.
 8. Do not commit, push, merge, deploy, trigger paid services, or modify scheduled jobs unless specifically requested.
+
+Preserve production databases, backups, employer registries, screening queues,
+cached decisions, job history, private profiles, `.env`, credentials and user files.
+Inspect cleanup targets and preserve uncertain files. Never run indiscriminate
+Git cleanup/reset commands. Stop both worker schedules before migrations or
+consistent offline backups; use SQLite's backup API for live database backups.
 
 ## Test expectations
 

@@ -2,7 +2,8 @@
 
 The owner authorized the complete remaining personal workflow on 2026-10-27.
 [ADR 0008](adr/0008-integrated-personal-workflow.md) records the integrated scope;
-[build progress](build-plan.md) records validation and handoff details.
+[final pilot](activation-pilot.md) and [non-AI acceptance](non-ai-final-verification.md)
+record validation and handoff details. Development is complete; deployment is pending.
 
 - [x] Registry, SQLite/SQLAlchemy/Alembic and manual Greenhouse monitoring.
 - [x] Docker packaging and offline GitHub Actions CI.
@@ -15,9 +16,11 @@ The owner authorized the complete remaining personal workflow on 2026-10-27.
 - [x] Cron-compatible ticks, source backoff, DST-aware report slots, run recovery.
 - [x] Populated-schema migration, overlap lock, mocked end-to-end regression tests.
 - [x] Deployment/configuration, backup and operational instructions.
-- [ ] Owner supplies private profile, source candidates and optional credentials.
+- [x] Private profile, candidate inputs and configured provider pilot verified locally.
+- [x] Live monitoring, SMTP acceptance and capped Gemini accuracy/pilot evaluation.
+- [ ] Transfer consistent database backup and private configuration to the Azure host.
 - [ ] Owner chooses always-on host and activates a production schedule.
-- [ ] Live provider/account smoke tests and model-quality evaluation after setup.
+- [ ] Verify the Azure image, persistent disk, health, provider connectivity and email receipt before activating schedules.
 
 Known bounds: candidate-based discovery and confirmed-domain search activation
 do not provide internet-wide coverage. Cross-source duplicate suppression needs

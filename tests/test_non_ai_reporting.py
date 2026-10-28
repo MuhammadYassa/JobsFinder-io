@@ -239,11 +239,14 @@ def test_enqueue_conflict_remains_retriable(database, tmp_path, monkeypatch):
     )
 
 
+@pytest.mark.parametrize(
+    "report_time", ["2026-01-15T15:00:00+00:00", "2026-07-15T14:00:00+00:00"]
+)
 def test_full_non_ai_discovery_poll_smtp_and_repeat_tick(
-    database, tmp_path, monkeypatch
+    database, tmp_path, monkeypatch, report_time
 ):
     import json
-    from datetime import UTC, datetime
+    from datetime import datetime
 
     import httpx
 
@@ -255,6 +258,10 @@ def test_full_non_ai_discovery_poll_smtp_and_repeat_tick(
     from jobsfinder_io.sources.greenhouse import GreenhouseCollector
 
     engine = database[1]
+    # Both times are 10 AM New York. Keep polling and the injected scheduler
+    # clock consistent so freshly observed jobs never appear to be in the future.
+    now = datetime.fromisoformat(report_time)
+    monkeypatch.setattr("jobsfinder_io.ingestion.polling.utc_now", lambda: now)
     monkeypatch.setattr(
         "jobsfinder_io.discovery.network.resolve_public", lambda host: "93.184.216.34"
     )
@@ -332,7 +339,6 @@ def test_full_non_ai_discovery_poll_smtp_and_repeat_tick(
                 engine, source_id, collector=collector, detail_budget=0
             ),
         )
-        now = datetime.now(UTC).replace(hour=14, minute=0, second=0)
         with Session(engine) as session, session.begin():
             session.get(JobSource, source_id).last_attempt_at = now - timedelta(hours=2)
         first = operations.run_due(engine, output_dir=tmp_path, now=now)

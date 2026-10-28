@@ -1,18 +1,17 @@
 # Gemini batch screening
 
 Current primary: `gemini-3.5-flash-lite`. See the
-[one-batch live verification](flash-lite-live-verification.md) and
+[final activation pilot](activation-pilot.md) and
 [ADR0011](adr/0011-flash-lite-screening.md). The supplied project limits are
-500 RPD / 15 RPM / 250000 input TPM. The approved application limit is20calls per
-Pacific day, with2reserved. See [final activation](activation-pilot.md).
+500 RPD / 15 RPM / 250000 input TPM. The approved application limit is 20 calls per
+Pacific day, with 2 reserved. See [final activation](activation-pilot.md).
 
 Monitoring, email and reports keep working independently. AI configuration is
 enabled: `GEMINI_BATCH_ENABLED=true`, `GEMINI_MAX_CALLS=20`, `GEMINI_DAILY_LIMIT=20`.
 No permanent OS schedule has been installed. Set false/0 to disable AI explicitly.
 
-Validation: **372 tests passed**, Ruff clean, Docker build/Compose and offline
-container migrations/CLI checks passed. The real disabled command queued 252
-candidates without changing the existing 75 screening rows or request usage.
+Acceptance evidence and its limits are recorded in the
+[final accuracy evaluation](flash-lite-final-accuracy.md) and activation pilot.
 
 `run-due` records active software/uncertain postings in a durable queue, including
 initial baselines without claiming new publication. Manual `screen` also refreshes
@@ -30,13 +29,13 @@ successful screening. Successful items save independently; others remain queued.
 
 Explicit US-only locations use the US policy; explicit foreign-only locations
 use the international policy. Mixed, global or unknown geography retains both.
-Batch-v2 results include bounded exact qualification evidence and field origins
+Results include bounded exact qualification evidence and field origins
 (`model`, `exact_source_fallback`, or `not_explicitly_classified`). A locally filled
 excerpt is not a model extraction success or proof of a mandatory disqualifier.
 Changing the evidence/prompt version requires a fresh review; history is retained.
 Successful cache entries also require the current `validation_version`; invalid
 or deferred outcomes never satisfy the cache. See the
-[controlled accuracy evaluation](flash-lite-accuracy-evaluation.md) for remaining
+[completed accuracy evaluation](flash-lite-final-accuracy.md) for remaining
 false-negative risks. The later final pilot approved capped, human-reviewed
 screening configuration; the host schedule is not active yet.
 
@@ -55,8 +54,8 @@ Those tests establish serialization/storage, not live accuracy at either size.
 
 These are generation-request estimates, assuming successful complete responses,
 no long-job splits, no cached jobs and no token-count calls. Extra count/retry
-requests consume the same local allowance. The normal18-call daily allocation
-and8generation batches per session process backlog gradually;250uncached jobs
+requests consume the same local allowance. The normal 18-call daily allocation
+and 8 generation batches per session process backlog gradually; 250 uncached jobs
 span multiple days at the approved settings.
 Invocation/session, RPM/TPM limits and failures can spread work across days.
 No promise of exactly two daily requests or a dollar cost is made.
@@ -85,34 +84,19 @@ attempts per job per Pacific day. Partial/invalid responses wait 15 minutes;
 truncated responses also reduce the next batch size. Token usage is counted once
 per request in the summary and request receipt, not once per job.
 
-## Later controlled live test — only after owner approval
+## Maintenance verification
 
-1. Check model access and actual quota/reset in AI Studio. Keep scheduled
-   screening disabled. Confirm `GEMINI_MAX_CALLS=0` outside this one invocation.
-2. Choose 3–5 stored IDs spanning strong fit, senior, unknown sponsorship and
-   explicit restrictions; inspect their actual descriptions. Review your private
-   profile, particularly flexible May/June 2027 availability.
-3. First make a zero-call queue check, passing the real absolute DB/profile paths:
+The [final accuracy evaluation](flash-lite-final-accuracy.md) and
+[activation pilot](activation-pilot.md) record completed live acceptance.
+Use recorded/synthetic fixtures for routine maintenance; additional live calls
+need explicit authorization. For an authorized selected-job check, pass the real
+absolute database/profile paths and explicit posting IDs and call limits. Inspect
+every policy outcome and exact source evidence, confirm invalid work stays queued,
+and confirm successful unchanged results reuse the cache without generation.
 
-```sh
-uv run jobsfinder-io --db /absolute/jobsfinder.db screen --profile /private/profile.json --posting-id 1 --posting-id 2 --posting-id 3 --batch-size 5 --max-calls 0
-```
-
-4. After approval, repeat that selected-ID command with `--max-calls 1 --no-retries`.
-   For this small diagnostic use `GEMINI_TOKEN_COUNT_MODE=estimate` so the single
-   request is generation; no automatic retry is made. Do not select all jobs.
-5. Compare every ID/policy/evidence quote against the source and profile. Inspect
-   ScreeningResult and `health`; verify invalid/omitted jobs remain queued. Repeat
-   unchanged selected IDs to confirm zero generation calls for successful items.
-   Review token metadata on `gemini-batch-request:*` receipts. A complete response
-   demonstrates service access, not general eligibility accuracy.
-6. Only then consider a 10-job comparison. Expand to 25 only after measuring
-   accuracy, latency and output size. Larger prompts risk mixed evidence,
-   incomplete arrays, truncation and slower responses; schema alone cannot
-   guarantee correct reasoning. Existing service/quota problems can still occur.
-
-See [deployment](deployment.md) for later optional session cron configuration.
-No applications, recruiter messages or notifications are triggered by `screen`.
+See [deployment](deployment.md) for the separate session schedule. Larger batches
+can mix evidence or truncate output; schema validity does not establish accuracy.
+`screen` does not send notifications or submit applications.
 
 Learning checkpoint: follow `screen_jobs` → `screen_batch` → `pack_batches` →
 `reserve_request` → `validate_batch`. A queue receipt says work is pending;
