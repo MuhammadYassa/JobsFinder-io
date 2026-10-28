@@ -1,5 +1,9 @@
 # ADR 0010 — Multi-job Gemini screening
 
+Update: [ADR0011](0011-flash-lite-screening.md) supersedes the3.8default and old
+20-request ceiling below. Current primary is3.5Flash-Lite with owner-supplied
+500RPD/15RPM/250000TPM; scheduled activation remains off.
+
 - Status: Accepted by the owner's batch-screening implementation request
 - Date: 2026-10-27
 - Supersedes: ADR 0009's operational per-job/two-stage request flow and UTC cap

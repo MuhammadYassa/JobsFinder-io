@@ -7,12 +7,16 @@ Actions runs tests only. No schedule or remote deployment is installed here.
 ## Configure a Linux host
 
 1. Install Docker Engine and Compose; put the checkout at `/opt/jobsfinder`.
-2. Create `/var/lib/jobsfinder/private` and `/var/lib/jobsfinder/reports`, owned
-   by the runtime account. Protect private directories/files with modes 700/600.
+2. Create `/var/lib/jobsfinder` **and** its `private` and `reports` directories,
+   all owned by the runtime UID/GID. The parent must be writable because SQLite
+   journals and process locks live there. Protect directories/files with modes
+   700/600. On Linux, an administrator can use `install -d -m 700 -o UID -g GID`
+   for each directory, replacing UID/GID with the actual runtime account IDs.
 3. Copy `.env.example` to ignored `.env`. Set
    `JOBSFINDER_DATA_DIR=/var/lib/jobsfinder`, `LOCAL_UID`/`LOCAL_GID` to that account,
    `JOBSFINDER_CANDIDATES=/app/data/private/candidates.json`, and
    `JOBSFINDER_REPORT_DIR=/app/data/reports`.
+   Protect the populated `.env` with `chmod 600 .env`.
 4. Leave `GEMINI_MAX_CALLS=0`. Unattended monitoring never invokes AI, even with
    an old key present. No profile is required for non-AI reports.
 
@@ -54,6 +58,11 @@ This sends only one test to your configured address, without draining queued
 job mail. Missing settings return a nonzero test exit. Monitoring without SMTP
 still writes local artifacts and retains a durable outbox. Before configuring
 SMTP later, inspect any accumulated queue: eligible pending mail will send.
+
+New report/alert groups consolidate older **never-attempted** messages of the
+same kind, retaining all still-relevant unreported jobs in the seven-day window.
+Old message history and local files remain. Attempted, accepted or uncertain
+messages are not replaced or automatically replayed by consolidation.
 
 Temporary failures before acceptance retry after five/ten minutes, at most three
 attempts. Authentication/recipient failures require correction and manual review.
@@ -129,11 +138,33 @@ activation needs. SMTP credentials and an always-on host are required for
 unattended email operation. [Gemini status](gemini-reliability.md) is unchanged;
 screening remains disabled and is separate from these workflows.
 
+The [final non-AI verification](non-ai-final-verification.md) includes one Gmail
+test accepted over authenticated STARTTLS, real discovery growth, report-content
+checks, container recovery and remaining coverage limitations. SMTP acceptance
+does not independently confirm inbox delivery. Repeat deployment smoke checks
+on the chosen cloud host: its persistent-disk permissions, SMTP egress and uptime
+have not been verified here. Never use GitHub Actions as the production host.
+
+For non-AI production, do not install the optional screening cron entry. Runtime
+overrides can enforce AI-off without rewriting a separately maintained `.env`:
+
+```sh
+docker compose run --rm -T -e GEMINI_API_KEY= -e GEMINI_MAX_CALLS=0 -e GEMINI_BATCH_ENABLED=false jobsfinder jobsfinder-io run-due
+```
+
+Current discovery settings remain operator-owned. The verification directory
+contains supplemental directory/import inputs; they were not silently installed
+as the daily configuration. Configure reviewed inputs for continued registry
+growth. A successful test pass does not turn a finite import into internet-wide
+employer discovery.
+
 ## Optional batch screening, prepared but disabled
 
 The multi-job implementation is described in [batch screening](gemini-batch-screening.md).
 Keep `GEMINI_BATCH_ENABLED=false` and `GEMINI_MAX_CALLS=0` until the owner approves
-a controlled live test. `run-due` only maintains the durable screening queue;
+a larger accuracy test and recurring-activation approval. The initial
+[Flash-Lite batch](flash-lite-live-verification.md) passed service/JSON checks
+but retained evidence-coverage concerns. `run-due` only maintains the screening queue;
 polling, email and reports do not wait for Gemini.
 
 After separate approval and successful live acceptance, a second five-minute

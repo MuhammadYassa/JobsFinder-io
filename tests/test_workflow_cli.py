@@ -104,7 +104,7 @@ def test_default_model_is_gemini(monkeypatch):
     for name in ("GEMINI_PRELIMINARY_MODEL", "GEMINI_REVIEW_MODEL"):
         monkeypatch.delenv(name, raising=False)
     args = build_parser().parse_args(["screen"])
-    assert args.preliminary_model == args.review_model == "gemini-3.8-flash"
+    assert args.preliminary_model == args.review_model == "gemini-3.5-flash-lite"
 
 
 def test_screen_cli_forwards_only_selected_postings(database, monkeypatch):

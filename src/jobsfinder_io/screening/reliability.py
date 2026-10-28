@@ -25,9 +25,10 @@ class Failure:
     category: str
     http_status: int | None = None
     retry_after_seconds: float | None = None
+    detail: str | None = None
 
     def payload(self) -> dict:
-        return asdict(self)
+        return {k: v for k, v in asdict(self).items() if k != "detail" or v is not None}
 
 
 def _seconds(value: object) -> float | None:
@@ -93,6 +94,11 @@ def classify_error(exc: Exception, *, now: datetime | None = None) -> Failure:
                         )
             if kind.endswith("ErrorInfo"):
                 signals.append(str(detail.get("reason", "")))
+            if kind.endswith("BadRequest"):
+                violations = detail.get("fieldViolations", [])
+                for violation in violations if isinstance(violations, list) else []:
+                    if isinstance(violation, dict):
+                        signals.append(str(violation.get("description", "")))
         delay = max(delays) if delays else None
         signal = " ".join(signals).lower()
         if code == 429:
@@ -130,7 +136,26 @@ def classify_error(exc: Exception, *, now: datetime | None = None) -> Failure:
                 503: "server_overload",
                 504: "server_timeout",
             }.get(code, "provider_error")
-        return Failure(category, code, delay)
+        detail = None
+        if code == 400:
+            # Fixed diagnostic enums only: never store arbitrary response text,
+            # field names, projects, URLs, headers, credentials or input data.
+            if re.search(
+                r"schema.{0,100}(?:too many states|branching|complex)|constraint.{0,80}too many states",
+                signal,
+            ):
+                detail = "structured_schema_complexity"
+            elif "api_key_invalid" in signal or "api key not valid" in signal:
+                detail = "invalid_api_key"
+            elif "thinking" in signal and re.search(
+                r"unsupported|not supported|invalid", signal
+            ):
+                detail = "unsupported_thinking_configuration"
+            elif "schema" in signal:
+                detail = "invalid_structured_schema"
+            else:
+                detail = "unspecified_invalid_argument"
+        return Failure(category, code, delay, detail)
     if isinstance(exc, httpx.TimeoutException):
         return Failure("client_timeout")
     if isinstance(exc, httpx.RequestError):

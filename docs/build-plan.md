@@ -217,3 +217,99 @@ migration, remote deployment, actual host scheduling, commit or push.
 See [batch guide](gemini-batch-screening.md) for default 10-job sizing, optional
 25-job settings, request estimates, independent session cron and later controlled
 live acceptance. Serialization tests do not establish model accuracy or capacity.
+
+## Final non-AI pre-deployment acceptance — complete
+
+See [full verification](non-ai-final-verification.md). Real registry grew 5→9
+employers/sources with 494 postings, 27 successful polls, 4 rejected duplicate
+registrations and no duplicate posting identities. One Gmail test was accepted
+using authenticated STARTTLS; inbox receipt is unconfirmed. No other live mail.
+
+Fixed bounded official-careers navigation, empty-plain-text HTML fallbacks,
+report freshness/geography/evidence, unsent backlog consolidation and delivery
+history. Full **424 tests**, Ruff, Docker, populated-copy migration, non-root
+execution, Linux crash-lock recovery and backup/restore all passed. Real-data
+reports verified451 application links and suppressed unchanged recommendations.
+Independent discovery/workflow/security reviewers passed their scopes.
+
+Gemini was forced off per process/container; historical75results/41requests are
+unchanged. No saved user config was overwritten. Cloud host and permanent cron
+remain unactivated. Free discovery needs maintained reviewed inputs; unsupported
+pages and genuinely missing descriptions remain explicit limitations.
+
+## Flash-Lite switch and one-batch acceptance — complete; scheduling disabled
+
+Primary model `gemini-3.5-flash-lite`; supplied project quotas 15 RPM/250000 input
+TPM/500 RPD. Preserve queue/cache/validation and Pacific reset; fix former20/day
+configuration ceiling. Keep scheduled flag false and default call allowance0.
+Prepare human labels before calling the model; mocked regression first, then
+exactly one selected3–5job batch with max-calls1/no-retries and token counting
+disabled for that invocation. Inspect every outcome and usage; no extra calls
+to pursue success. No mail, deployment, schedules, commits or pushes.
+
+Validation: 440 mocked tests passed; Ruff passed. One actual generation returned
+all 5 selected jobs / 10 policy results, with exact IDs/source evidence. Usage was
+10110 input + 2799 output tokens, 7.228 seconds, and 0 API failures. A zero-call
+rerun reused all 10 results. An earlier diagnostic-wrapper launch failed before
+network I/O; its zero-request audit is preserved separately. No extra live
+request was consumed.
+
+Ready for a larger accuracy test, not autonomous activation: Render's immigration
+classification lacked its supporting quote (validator downgraded to B/review),
+SRE experience fields were incomplete, and country routing duplicates policies.
+See [live findings](flash-lite-live-verification.md) and
+[ADR 0011](adr/0011-flash-lite-screening.md).
+
+## Final controlled accuracy evaluation — budget complete; activation blocked
+
+Fix explicit-country routing, complete source-grounded qualification extraction,
+and sponsorship-evidence semantics before live work. Freeze about30 previously
+unseen real-job labels before predictions; prior5jobs are development examples,
+not holdout data. Synthetic missing edge cases stay offline. Budget: at most3
+new generation requests, three batches of10, no count-token calls or automatic
+retries. Use a separate guarded run record and persist raw/validated results for
+every outcome. Keep saved AI allowance0, scheduled flagfalse and all delivery off.
+No deployment, cron, commits or pushes. Report errors/uncertainty, not just pass.
+
+30source-only labels frozen before prediction; prior5development jobs excluded.
+3generation attempts used:2HTTP400failures,1ten-job/13-policy success after
+simplifying the outer array schema.1read-only metadata request confirmed model
+access. No retries/count-token calls. Usage24086input+3802output;11.634s success.
+Two mistaken human labels were separately adjudicated; frozen originals retained.
+
+Raw results had4false-rejection policy outcomes across3jobs. Confirmed experience,
+conditional-sponsorship, inferred-seniority and software-scope bugs were fixed.
+Offline replay:11valid outcomes(8review/3reject),2invalid remain queued;11cache
+hits/0calls.20HTTP-failed jobs also remain pending. Earlier records preserved.
+468tests/Ruff passed; Docker built/loaded and offline smoke checks passed.
+Saved AI flags remainfalse/0. Larger accuracy verification is incomplete within
+the request budget; do not activate unattended AI. See
+[full evidence and next test](flash-lite-accuracy-evaluation.md).
+
+## Finish accuracy verification — completed within six-request budget
+
+Freeze the corrected 30-job reference (only previously documented adjudications
+12 and181). Keep original snapshots immutable. Enforce explicit hard-rejection
+proofs locally; keep the simpler provider schema. Complete mocked regressions
+before live work. Up to6 additional generation attempts, batches of at most6,
+one attempt each, no token-count calls. Stop after2 consecutive HTTP400s or any
+unexpected quota failure. Saved AI flags remainfalse/0. Preserve histories and
+measure raw versus final decisions, per job and per policy. No schedules,
+notifications, paid-service activation, deployment, commits or pushes.
+
+All30jobs/37outcomes complete against the corrected frozen reference.6newcalls:
+5successful screening/follow-up calls;1old-schema comparison intentionally
+reproduced400. Identical normalized request bodies isolate outermaxItems10.
+One omitted international outcome stayed pending until explicit manual follow-up.
+Raw false rejections:7unique jobs/9policies; final0/0, false acceptances0/0.
+Final27review/6reject/3stretch/1recommend; four unsuitable jobs retained for review
+without independent exclusion proof. All37cached, repeat0calls, pending0.
+Usage59659input+7851output tokens; no automatic retries/count-token calls.
+Fixed queue-context attempt recovery and added source-proof/context guards.
+SavedAIflagsfalse/0. Recommend a capped human-reviewed pilot only; no activation.
+See [final report](flash-lite-final-accuracy.md). Final tests/Docker recorded below.
+
+Final validation: **491 tests passed**, Ruff check/format passed, Docker built
+and loaded; offline container confirmed UID 1000, current v8 proof validation,
+secret exclusion and CLI execution. All 37 current decisions reused with zero
+requests and all 30 evaluation queue records complete. No AI activation occurred.

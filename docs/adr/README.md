@@ -27,3 +27,5 @@ When approved, change an ADR's status to **Accepted** and record the date. A new
 - 0007 — Accepted (Phase 3 Docker/CI scope)
 - [0010 — Multi-job Gemini screening](0010-multi-job-gemini-screening.md) — Accepted;
   implementation remains disabled pending controlled live acceptance.
+- [0011 — Flash-Lite primary model](0011-flash-lite-screening.md) — Accepted;
+  one selected live batch verified, scheduled activation still disabled.

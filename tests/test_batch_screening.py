@@ -2,6 +2,7 @@
 
 import json
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -97,6 +98,7 @@ def test_ten_jobs_single_request_validated_stored_and_cached(
         body = json.loads(request.content)
         assert body["generationConfig"]["responseMimeType"] == "application/json"
         assert body["generationConfig"]["responseJsonSchema"]["type"] == "array"
+        assert "maxItems" not in body["generationConfig"]["responseJsonSchema"]
         assert body["generationConfig"]["maxOutputTokens"] == 24576
         assert body["generationConfig"]["thinkingConfig"]["thinking_level"] == "LOW"
         assert "contact_email" not in request.content.decode()
@@ -299,7 +301,7 @@ def test_counted_oversize_splits_on_next_pass_without_generation(
 def test_pacific_quota_retry_reserve_and_reset_even_same_utc_day(database):
     engine = database[1]
     now = datetime(2027, 3, 14, 7, 10, tzinfo=UTC)  # March13 23:10 PST
-    config = BatchConfig(rpm=1000, tpm=1_000_000)
+    config = BatchConfig(daily_limit=20, rpm=1000, tpm=1_000_000)
     for _ in range(18):
         assert "request_key" in reserve_request(
             engine, config, now=now, tokens=1, kind="generate"
@@ -503,7 +505,7 @@ def test_retry_after_overload_survives_restart_and_uses_reserved_request(
 ):
     engine = database[1]
     now = utc_now()
-    config = BatchConfig(rpm=100, tpm=1_000_000)
+    config = BatchConfig(daily_limit=20, rpm=100, tpm=1_000_000)
     calls = []
 
     def handler(request):
@@ -545,7 +547,7 @@ def test_retry_after_overload_survives_restart_and_uses_reserved_request(
 
 def test_exhausted_daily_budget_issues_no_http(database, posting, profile):
     now = utc_now()
-    config = BatchConfig(rpm=100, tpm=1_000_000)
+    config = BatchConfig(daily_limit=20, rpm=100, tpm=1_000_000)
     for _ in range(18):
         reserve_request(database[1], config, now=now, tokens=1, kind="generate")
 
@@ -567,7 +569,7 @@ def test_exhausted_daily_budget_issues_no_http(database, posting, profile):
 
 
 def test_utc_midnight_does_not_reset_pacific_quota(database):
-    config = BatchConfig(rpm=100, tpm=1_000_000)
+    config = BatchConfig(daily_limit=20, rpm=100, tpm=1_000_000)
     now = datetime(2027, 4, 1, 23, 55, tzinfo=UTC)
     for _ in range(18):
         reserve_request(database[1], config, now=now, tokens=1, kind="generate")
@@ -687,7 +689,7 @@ def test_network_wait_holds_no_database_or_monitoring_lock(database, posting, pr
     assert results(engine)[0].content_hash == "hash1"  # preserved historical snapshot
 
 
-def test_compatible_individual_success_cache_is_reused(
+def test_old_protocol_cache_requires_current_evidence_review(
     database, posting, profile, monkeypatch
 ):
     from jobsfinder_io.screening import screen_jobs_individual
@@ -704,9 +706,105 @@ def test_compatible_individual_success_cache_is_reused(
             == 2
         )
 
-    def forbidden(*args, **kwargs):
-        pytest.fail("Compatible cached results must not call Gemini")
+    with gemini_client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                200, json=response(answers(jobs_from(request)))
+            )
+        )
+    ) as client:
+        result = screen_batch(
+            database[1], profile, api_key="fake", max_calls=20, client=client
+        )
+        repeat = screen_batch(
+            database[1], profile, api_key="fake", max_calls=20, client=client
+        )
+    assert result["api_calls"] == 1 and result["cached"] == 0
+    assert repeat["api_calls"] == 0 and repeat["cached"] == 1
+    assert len(results(database[1])) == 2  # old history preserved
 
-    monkeypatch.setattr("jobsfinder_io.screening.batch.genai.Client", forbidden)
-    result = screen_batch(database[1], profile, api_key="fake", max_calls=20)
-    assert result["cached"] == 1 and result["api_calls"] == 0
+
+def test_exact_salary_quote_is_not_valid_experience_and_stays_pending(
+    database, posting, profile
+):
+    salary = "The base salary range is $100,000 per year."
+    with Session(database[1]) as session, session.begin():
+        post = session.get(Posting, posting)
+        post.description_text += "\n" + salary
+
+    def handler(request):
+        rows = answers(jobs_from(request))
+        rows[0]["evaluations"][0]["result"]["preferred_experience"] = salary
+        return httpx.Response(200, json=response(rows))
+
+    with gemini_client(transport=httpx.MockTransport(handler)) as client:
+        first = screen_batch(
+            database[1],
+            profile,
+            api_key="fake",
+            max_calls=20,
+            client=client,
+            max_attempts=1,
+        )
+        repeat = screen_batch(
+            database[1], profile, api_key="fake", max_calls=0, client=client
+        )
+    assert first["api_calls"] == 1 and first["pending"] == 1
+    assert first["failed"] == 1 and not results(database[1])
+    assert repeat["api_calls"] == 0 and repeat["cached"] == 0
+    assert queued(database[1])[0].status == "pending"
+
+
+def test_old_validation_cache_is_not_reused_as_current_success(
+    database, posting, profile
+):
+    with gemini_client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                200, json=response(answers(jobs_from(request)))
+            )
+        )
+    ) as client:
+        screen_batch(database[1], profile, api_key="fake", max_calls=20, client=client)
+        with Session(database[1]) as session, session.begin():
+            row = session.get(type(results(database[1])[0]), results(database[1])[0].id)
+            row.payload = {**row.payload, "validation_version": "old-validator"}
+        result = screen_batch(
+            database[1], profile, api_key="fake", max_calls=0, client=client
+        )
+    assert result["cached"] == 0 and result["pending"] == 1 and result["api_calls"] == 0
+    assert len(results(database[1])) == 1  # historical result retained
+
+
+def test_owned_client_recursion_preserves_context_attempt_reset(
+    database, posting, profile, monkeypatch
+):
+    refresh_queue(database[1], posting_ids=[posting])
+    with Session(database[1]) as session, session.begin():
+        row = session.scalar(
+            select(TaskRun).where(TaskRun.task_key.startswith("screen-queue:"))
+        )
+        row.payload = {
+            **row.payload,
+            "context": "previous-policy",
+            "attempts_today": 1,
+            "attempt_day": utc_now()
+            .astimezone(ZoneInfo("America/Los_Angeles"))
+            .date()
+            .isoformat(),
+        }
+    with gemini_client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                200, json=response(answers(jobs_from(request)))
+            )
+        )
+    ) as client:
+        monkeypatch.setattr(
+            "jobsfinder_io.screening.batch.genai.Client", lambda **kwargs: client
+        )
+        result = screen_batch(
+            database[1], profile, api_key="fake", max_calls=20, max_attempts=1
+        )
+    assert result["api_calls"] == 1 and result["screened"] == 1
+    assert queued(database[1])[0].payload["attempts_today"] == 1

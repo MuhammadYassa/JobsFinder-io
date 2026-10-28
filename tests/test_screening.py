@@ -567,10 +567,10 @@ def test_international_remote_evaluates_separate_policies(database, posting, pro
 
     with gemini_client(transport=httpx.MockTransport(handler)) as client:
         counts = screen_jobs(database[1], profile, api_key="fake", client=client)
-    assert counts["screened"] == 2
-    assert counts["api_calls"] == 4
+    assert counts["screened"] == 1
+    assert counts["api_calls"] == 2
     assert any("Pipeline: international" in prompt for prompt in policies)
-    assert {r.pipeline for r in results(database[1])} == {"us", "international"}
+    assert {r.pipeline for r in results(database[1])} == {"international"}
 
 
 def test_unchanged_missing_credentials_do_not_grow_history(database, posting, profile):

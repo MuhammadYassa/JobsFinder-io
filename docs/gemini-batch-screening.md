@@ -1,8 +1,14 @@
 # Gemini batch screening
 
+Current primary: `gemini-3.5-flash-lite`. See the
+[one-batch live verification](flash-lite-live-verification.md) and
+[ADR0011](adr/0011-flash-lite-screening.md). The supplied project limits are
+500 RPD / 15 RPM / 250000 input TPM; scheduled screening and the default call
+allowance remain disabled. Older 3.8/20-request records describe the previous configuration.
+
 Monitoring, email and reports keep working independently. AI is still disabled:
-`GEMINI_BATCH_ENABLED=false`, `GEMINI_MAX_CALLS=0`. No paid/live requests were
-made to validate this implementation.
+`GEMINI_BATCH_ENABLED=false`, `GEMINI_MAX_CALLS=0`. Controlled live verification
+is recorded separately; these flags have not enabled unattended screening.
 
 Validation: **372 tests passed**, Ruff clean, Docker build/Compose and offline
 container migrations/CLI checks passed. The real disabled command queued 252
@@ -22,6 +28,17 @@ rules. Evidence must come from that particular job and match its source URL.
 Missing/duplicate IDs, unsupported quotes, refusals and truncation never mean
 successful screening. Successful items save independently; others remain queued.
 
+Explicit US-only locations use the US policy; explicit foreign-only locations
+use the international policy. Mixed, global or unknown geography retains both.
+Batch-v2 results include bounded exact qualification evidence and field origins
+(`model`, `exact_source_fallback`, or `not_explicitly_classified`). A locally filled
+excerpt is not a model extraction success or proof of a mandatory disqualifier.
+Changing the evidence/prompt version requires a fresh review; history is retained.
+Successful cache entries also require the current `validation_version`; invalid
+or deferred outcomes never satisfy the cache. See the
+[controlled accuracy evaluation](flash-lite-accuracy-evaluation.md) for remaining
+false-negative risks and the current decision to keep unattended AI disabled.
+
 ## Size and request estimates
 
 The default is **10 jobs per generation request**. It shrinks for long descriptions
@@ -37,13 +54,14 @@ Those tests establish serialization/storage, not live accuracy at either size.
 
 These are generation-request estimates, assuming successful complete responses,
 no long-job splits, no cached jobs and no token-count calls. Extra count/retry
-requests consume the same local allowance. The normal 18-request daily allocation
-means 250 uncached jobs at default size require at least two Pacific days.
+requests consume the same local allowance. The normal 498-request daily allocation
+can accommodate 25 generation requests for 250 uncached jobs if explicitly allowed.
+Invocation/session, RPM/TPM limits and failures can spread work across days.
 No promise of exactly two daily requests or a dollar cost is made.
 
 Configuration is in `.env.example`. Main controls: `GEMINI_BATCH_SIZE` (1–25),
 input/output token budgets, `GEMINI_BATCH_MODEL`, `GEMINI_RPM`, `GEMINI_TPM`,
-`GEMINI_DAILY_LIMIT` (maximum 20), and `GEMINI_RETRY_RESERVE` (default 2).
+`GEMINI_DAILY_LIMIT` (maximum 500), and `GEMINI_RETRY_RESERVE` (default 2).
 Set RPM/TPM from the project's actual AI Studio limits before activation; defaults
 are application limits, not claims about the account's quota. `GEMINI_MAX_CALLS`
 limits both one invocation and the Pacific day's total. UTC counters are retained

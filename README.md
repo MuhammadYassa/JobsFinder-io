@@ -81,7 +81,7 @@ reviewable. Define your actual education, experience, availability and immigrati
 constraints in the private profile; see [screening design](docs/ai-screening.md).
 The source code contains no personal profile.
 
-Screening uses the official `google-genai` SDK with `gemini-3.8-flash` by default.
+Screening uses the official `google-genai` SDK with `gemini-3.5-flash-lite` by default.
 Configure `GEMINI_PRELIMINARY_MODEL`, `GEMINI_REVIEW_MODEL`, and `GEMINI_MAX_CALLS`
 as needed. The OpenAI integration has been replaced; see
 [ADR 0009](docs/adr/0009-gemini-screening.md).

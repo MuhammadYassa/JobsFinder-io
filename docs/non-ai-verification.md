@@ -1,5 +1,9 @@
 # Non-AI production verification
 
+Historical record: [final verification](non-ai-final-verification.md) supersedes
+the SMTP-credential blocker and older counts below. It includes the accepted
+Gmail test and additional discovery/reliability fixes.
+
 Verified 2026-10-27 New York (2026-10-28 UTC). No schedules, remote deployments,
 commits, paid search or AI calls were activated. Three independent agents built
 SMTP, reports and discovery, then reviewed integration and failure recovery.

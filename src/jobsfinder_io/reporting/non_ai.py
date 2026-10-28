@@ -55,6 +55,7 @@ def _select(session: Session, posts: list[Posting], channel: str) -> list[Postin
         select(Delivery, Posting)
         .join(Posting, Delivery.posting_id == Posting.id)
         .where(Delivery.channel == channel)
+        .where(Delivery.status != "superseded")
         .options(joinedload(Posting.source))
     ).all()
     delivered = {(receipt.posting_id, receipt.revision) for receipt, _ in receipts}
@@ -192,11 +193,26 @@ def _run(engine: Engine, output_dir, *, now, slot_key, enqueue, alert) -> dict:
     local_channel = "local_nonai_alert" if alert else "local_nonai_report"
     smtp_channel = "smtp_alert" if alert else "smtp_report"
     with Session(engine) as session:
+        # Include lifecycle changes even for no-longer-eligible jobs. Otherwise
+        # A/B -> A/B/C -> A/B reuses an archived key and can retain stale C mail.
+        alert_state = (
+            list(
+                session.execute(
+                    select(Posting.id, Posting.revision, Posting.status).order_by(
+                        Posting.id
+                    )
+                )
+            )
+            if alert
+            else []
+        )
         posts = list(
             session.scalars(
                 select(Posting)
                 .where(
                     Posting.status == "active",
+                    Posting.first_seen_at <= now,
+                    Posting.last_changed_at <= now,
                     or_(
                         Posting.first_seen_at >= now - timedelta(days=7),
                         Posting.last_changed_at >= now - timedelta(days=7),
@@ -217,18 +233,32 @@ def _run(engine: Engine, output_dir, *, now, slot_key, enqueue, alert) -> dict:
                 for post in posts
                 if post.discovery_kind != "baseline" or post.revision > 1
             ]
+    token = slot_key or (
+        hashlib.sha256(
+            repr(([(p.id, p.revision) for p in posts], alert_state)).encode()
+        ).hexdigest()[:20]
+        if alert
+        else now.isoformat()
+    )
+    key = f"{prefix}:{token}"
+    with Session(engine) as session:
+        existing_snapshot = session.scalar(
+            select(TaskRun.id).where(TaskRun.task_key == key)
+        )
+    if enqueue and existing_snapshot is None:
+        from jobsfinder_io.delivery import supersede_unsent_reports
+
+        if not alert:
+            supersede_unsent_reports(engine, key)
+        else:
+            from jobsfinder_io.delivery import supersede_unsent_alerts
+
+            supersede_unsent_alerts(engine, key)
+    with Session(engine) as session:
         local_posts = _select(session, posts, local_channel)
         email_posts = _select(session, posts, smtp_channel)
         if alert and not local_posts and not email_posts:
             return {"path": None, "count": 0, "email": {"status": "nothing_new"}}
-        token = slot_key or (
-            hashlib.sha256(
-                repr([(p.id, p.revision) for p in posts]).encode()
-            ).hexdigest()[:20]
-            if alert
-            else now.isoformat()
-        )
-        key = f"{prefix}:{token}"
         old = session.scalar(select(TaskRun).where(TaskRun.task_key == key))
         if (
             old

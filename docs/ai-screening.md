@@ -1,15 +1,18 @@
 # AI Screening and Eligibility (Proposed v0.1)
 
-> Structured two-stage screening, evidence validation, versioned cache and daily
+> Structured batch screening, evidence validation, versioned cache and daily
 > request caps are implemented. Private configuration is documented in
 > [deployment](deployment.md). The conceptual schema below is historical;
 > `screening.SCHEMA` is authoritative. Overrides are deferred. Broad country/start
-> interpretation remains reviewable; no live model quality evaluation is claimed.
+> interpretation remains reviewable; the initial small live evaluation below
+> does not establish broad production accuracy.
 
-Current provider: Google Gemini via `google-genai`, default `gemini-3.8-flash`.
-See [ADR 0009](adr/0009-gemini-screening.md) for structured output, request-budget
-and cache migration details. `screen_jobs()` calls `_request()` for each stage;
-the SDK parses the response, and `validate_result()` independently checks job
+Current provider: Google Gemini via `google-genai`, default `gemini-3.5-flash-lite`.
+The [Flash-Lite live verification](flash-lite-live-verification.md) records one
+successful batch and remaining accuracy concerns. Scheduled AI stays disabled.
+See [ADR 0011](adr/0011-flash-lite-screening.md) for the primary model and quotas.
+`screen_jobs()` calls `screen_batch()`; the SDK parses its structured response,
+and `validate_result()` independently checks each job's
 evidence before persistence. Cover letters remain local and use no AI calls.
 
 ## Principle

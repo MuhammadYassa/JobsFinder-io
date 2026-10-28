@@ -20,6 +20,10 @@ from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from jobsfinder_io.persistence.models import Posting, ScreeningResult, utc_now
+from jobsfinder_io.screening.rejection import (
+    hard_rejection_proofs,
+    require_rejection_proof,
+)
 from jobsfinder_io.screening.reliability import (
     classify_error,
     clear_provider_failure,
@@ -29,7 +33,7 @@ from jobsfinder_io.screening.reliability import (
 
 PROMPT_VERSION = "eligibility-v4-start-flexibility"
 POLICY_VERSION = "conservative-v1"
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 DISPOSITIONS = ["recommend", "stretch", "needs_review", "reject"]
 CLASSES = ["A", "B", "C", "D"]
 LOGGER = logging.getLogger(__name__)
@@ -142,25 +146,42 @@ def profile_fingerprint(profile: dict) -> str:
     ).hexdigest()
 
 
-def pipelines_for(locations: str) -> tuple[str, ...]:
-    """Unknown/remote locations remain eligible for both policy reviews."""
-    if not locations or re.search(r"\b(remote|worldwide|global)\b", locations, re.I):
-        return ("us", "international")
-    if re.search(
-        r"\b(USA|United States|U\.S\.|New York|California)\b", locations, re.I
-    ):
-        # Treat unrecognized secondary regions conservatively, including regions
-        # outside the preferred-country list. Only clearly US-only strings narrow.
-        remainder = re.sub(
-            r"\b(?:United States|USA|U\.S\.|New York|California|US|NY|CA)\b",
-            "",
-            locations,
-            flags=re.I,
+def graduation_year_from_profile(profile: dict) -> int | None:
+    """Use explicit graduation facts only; availability is not graduation."""
+    if profile.get("graduation_date"):
+        return date.fromisoformat(profile["graduation_date"]).year
+    education = profile.get("education")
+    facts = [*profile.get("facts", []), education if isinstance(education, str) else ""]
+    years = {
+        int(match)
+        for fact in facts
+        for match in re.findall(
+            r"graduat(?:ion|ing|e|ed)[^.!?\n]{0,60}?\b(20\d{2})\b", fact, re.I
         )
-        if remainder.strip(" ,;/-()."):
-            return ("us", "international")
-        return ("us",)
-    # Cities and state abbreviations are ambiguous; review rather than guess.
+    }
+    return years.pop() if len(years) == 1 else None
+
+
+def pipelines_for(locations: str) -> tuple[str, ...]:
+    """Use explicit geography; remote alone never establishes another country."""
+    from jobsfinder_io.relevance import location_group
+
+    if not locations or re.search(
+        r"\b(worldwide|global|North America|South America|Americas|APAC|EMEA)\b",
+        locations,
+        re.I,
+    ):
+        return ("us", "international")
+    group, _ = location_group(locations)
+    if group == "international":
+        return ("international",)
+    if group == "us":
+        # Unknown secondary geography stays dual-routed. These known US places
+        # and non-geographic modality labels do not create a foreign pipeline.
+        known = r"United States|USA|U\.S\.?|US|New York|NYC|NY|California|CA|San Francisco|San Jose|Los Angeles|Seattle|Washington|Boston|Massachusetts|Austin|Texas|Chicago|Illinois|Denver|Colorado|Atlanta|Georgia|Miami|Florida|Dallas|Houston|Raleigh|North Carolina|Portland|Oregon|Pennsylvania|Philadelphia|Remote|Hybrid|Onsite|On.site|HQ|Headquarters"
+        remainder = re.sub(r"\b(?:" + known + r")\b", "", locations, flags=re.I)
+        if not remainder.strip(" ,;:/()-."):
+            return ("us",)
     return ("us", "international")
 
 
@@ -208,13 +229,20 @@ def deterministic_result(posting: dict) -> dict | None:
 
 
 def validate_result(
-    value: object, text: str, source_url: str, *, available_from: str | None = None
+    value: object,
+    text: str,
+    source_url: str,
+    *,
+    available_from: str | None = None,
+    graduation_year: int | None = None,
+    pipeline: str | None = None,
 ) -> dict:
     """Validate types and exact source attribution independently of API schema."""
     if not isinstance(value, dict) or set(value) != set(SCHEMA["required"]):
         raise ValueError("invalid_result_schema")
     if value["disposition"] not in DISPOSITIONS:
         raise ValueError("invalid_disposition")
+    original_disposition = value["disposition"]
     if type(value["score"]) is not int or not 0 <= value["score"] <= 100:
         raise ValueError("invalid_score")
     if value["visa_class"] not in CLASSES or value["start_class"] not in CLASSES:
@@ -262,6 +290,7 @@ def validate_result(
         r"(?:required|only|must)|(?:must|require\w*|only).{0,50}"
         r"(?:citizens?(?:hip)?|permanent residen\w*|security clearance)|"
         r"(?:no|not|cannot|unable|without|won.t).{0,45}sponsor\w*|"
+        r"sponsor\w*.{0,25}(?:not available|not provided|unavailable|not supported)|"
         r"(?:existing|already|independent).{0,45}(?:work authori\w*|right to work)",
         quotes,
         re.I,
@@ -277,20 +306,89 @@ def validate_result(
         re.I,
     )
     uncertain = False
-    if value["visa_class"] in {"A", "C"} and not re.search(
-        r"\b(?:sponsor\w*|visa|OPT|work permit|work authori\w*|right to work)\b",
+    immigration = re.search(
+        r"\b(?:visa|OPT|H.?1B|immigration|work permit|work authori\w*|right to work)\b|"
+        r"\b(?:sponsor\w*).{0,30}(?:candidate|applicant|employment|relocat|work)|"
+        r"\b(?:offer|provide|available|unable|cannot|no|not).{0,30}sponsor\w*",
         quotes,
         re.I,
+    )
+    positive_support = re.search(
+        r"(?:offer|provide|support|sponsor|available|welcome|accept|eligible).{0,45}"
+        r"(?:visa|OPT|H.?1B|immigration|work permit|sponsorship)|"
+        r"(?:visa|OPT|work permit|sponsorship).{0,40}(?:available|provided|supported|welcome|accepted)",
+        quotes,
+        re.I,
+    )
+    unsupported_support = value["visa_class"] == "A" and (
+        not positive_support or bool(visa_restriction)
+    )
+    conditional_support = re.search(
+        r"(?:must|require|only|existing|already|current|future|transfer|case.by.case|discretion|conditional|subject to).{0,65}"
+        r"(?:visa|OPT|H.?1B|sponsor\w*|authori\w*|right to work)|"
+        r"(?:visa|OPT|sponsor\w*|work permit).{0,65}(?:only|conditional|subject to|not eligible|transfer|discretion)",
+        quotes,
+        re.I,
+    )
+    if value["visa_class"] in {"A", "C"} and (
+        not immigration
+        or unsupported_support
+        or (
+            value["visa_class"] == "C" and not (visa_restriction or conditional_support)
+        )
     ):
         value["visa_class"] = "B"
         value["uncertainty"].append(
             "Immigration support or limitation lacks relevant evidence."
         )
         uncertain = True
+    if (
+        value["visa_class"] == "D"
+        and visa_restriction
+        and re.search(
+            r"\b(?:discretion|may sponsor|visa transfers?|case.by.case|exceptions?)\b",
+            quotes
+            + "\n"
+            + "\n".join(
+                line
+                for line in text.splitlines()
+                if re.search(r"visa|sponsor|OPT|work authori|work permit", line, re.I)
+            ),
+            re.I,
+        )
+    ):
+        value["visa_class"] = "C"
+        value["uncertainty"].append(
+            "Conditional sponsorship exceptions require individual confirmation."
+        )
+        uncertain = True
+    if (
+        pipeline == "us"
+        and value["visa_class"] == "D"
+        and re.search(r"work authori\w*|right to work", quotes, re.I)
+        and not re.search(
+            r"citizen|permanent residen|clearance|sponsor|no OPT|OPT.{0,20}(?:not|ineligible)",
+            quotes,
+            re.I,
+        )
+    ):
+        value["visa_class"] = "C"
+        value["uncertainty"].append(
+            "US authorization timing needs confirmation against expected OPT; authorization language alone is not an OPT ban."
+        )
+        uncertain = True
     if value["visa_class"] == "D" and (not visa_restriction or negated_restriction):
         value["visa_class"] = "B"
         value["uncertainty"].append(
             "Immigration exclusion lacks explicit restriction evidence."
+        )
+        uncertain = True
+    if value["start_class"] in {"A", "C"} and not re.search(
+        r"\b(?:start|join|intake|graduate|graduation|immediate|20\d{2})\b", quotes, re.I
+    ):
+        value["start_class"] = "B"
+        value["uncertainty"].append(
+            "Start classification lacks matching quoted timing evidence."
         )
         uncertain = True
     if value["start_class"] == "D":
@@ -312,13 +410,66 @@ def validate_result(
                 )
             except ValueError:
                 incompatible = False
+        # A source-stated internship interval plus an explicit title year is
+        # also a fixed window. Do not infer a year from today's date.
+        interval = re.search(
+            r"internship will take place from\s+([A-Za-z]+)\s+(\d{1,2})\s*[-–]\s*([A-Za-z]+)\s+(\d{1,2})",
+            quotes,
+            re.I,
+        )
+        title_year = re.search(r"^.*Intern[^\n]*Winter\s+(20\d{2})", text, re.I)
+        if interval and title_year and available_from:
+            months = {
+                name: i
+                for i, name in enumerate(
+                    (
+                        "jan",
+                        "feb",
+                        "mar",
+                        "apr",
+                        "may",
+                        "jun",
+                        "jul",
+                        "aug",
+                        "sep",
+                        "oct",
+                        "nov",
+                        "dec",
+                    ),
+                    1,
+                )
+            }
+            try:
+                end = date(
+                    int(title_year[1]),
+                    months[interval[3][:3].lower()],
+                    int(interval[4]),
+                )
+                incompatible = incompatible or end < date.fromisoformat(available_from)
+            except (KeyError, ValueError):
+                pass
+        incompatible_graduation = False
+        if graduation_year is not None:
+            clauses = re.findall(
+                r"(?:must|need to|required to)\s+graduate\s+"
+                r"(?:in|by|before|no later than)\s+([^.!?\n;]{1,100})",
+                quotes,
+                re.I,
+            )
+            for clause in clauses:
+                window = re.split(r"\band\b", clause, maxsplit=1, flags=re.I)[0]
+                years = [int(item) for item in re.findall(r"\b20\d{2}\b", window)]
+                if years and max(years) < graduation_year:
+                    incompatible_graduation = True
         flexible_start = re.search(
             r"\b(?:flexible|negotiable)[ -]+(?:start|joining)(?:[ -]+dates?)?\b|"
             r"\b(?:start|joining)[ -]+dates?\b[^.!?\n]{0,60}\b(?:flexible|negotiable)\b",
             text,
             re.I,
         )
-        if not incompatible or flexible_start:
+        if not (incompatible or incompatible_graduation) or (
+            flexible_start and not incompatible_graduation
+        ):
             value["start_class"] = "B"
             value["uncertainty"].append(
                 "Start exclusion requires confirmation against private availability."
@@ -348,13 +499,50 @@ def validate_result(
             reason,
             re.I,
         )
-        if preferred_only or unknown_visa:
+        conditional_visa = value["visa_class"] == "C" and re.search(
+            r"\b(sponsor\w*|visa|immigration|work authori\w*|work permit)\b",
+            reason,
+            re.I,
+        )
+        title = text.splitlines()[0] if text else ""
+        unsupported_seniority = (
+            re.search(r"\b(senior|staff|principal)\b", reason, re.I)
+            and not re.search(r"\b(senior|staff|principal)\b", title, re.I)
+            and not re.search(r"\d[^\n.!?]{0,15}\byears?\b", quotes, re.I)
+        )
+        related_scope = (
+            re.search(
+                r"\b(?:software|data|analytics|application|integration|platform|backend|full.stack|front.end) engineer|\bdeveloper\b",
+                title,
+                re.I,
+            )
+            and re.search(
+                r"unrelated|does not match|not software.intensive", reason, re.I
+            )
+            and not re.search(r"\d[^\n.!?]{0,15}\byears?\b", quotes, re.I)
+            and not re.search(
+                r"\b(senior|staff|principal|manager|director)\b", title, re.I
+            )
+        )
+        if (
+            preferred_only
+            or unknown_visa
+            or conditional_visa
+            or unsupported_seniority
+            or related_scope
+        ):
             value["disposition"] = "needs_review"
             value["requires_human_review"] = True
             value["uncertainty"].append(
-                "Preferred experience or unknown immigration information alone cannot justify rejection."
+                "Preferred experience, unresolved immigration, inferred seniority or an ambiguous software-related scope alone cannot justify rejection."
             )
-    return value
+    # An unproven timing/immigration sub-class must not erase an independently
+    # quoted hard experience exclusion. Conversely, no proof means review.
+    if original_disposition == "reject" and hard_rejection_proofs(
+        value, text, source_url
+    ):
+        value["disposition"] = "reject"
+    return require_rejection_proof(value, text, source_url)
 
 
 def _reserve_call(engine: Engine, max_calls: int) -> bool:
@@ -458,6 +646,8 @@ def _request(
                 posting["text"],
                 posting["url"],
                 available_from=profile.get("available_from"),
+                graduation_year=graduation_year_from_profile(profile),
+                pipeline=pipeline,
             )
             result["usage"] = usage
             return result

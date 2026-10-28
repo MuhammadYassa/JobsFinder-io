@@ -20,10 +20,10 @@ class BatchConfig:
     output_tokens_per_job: int = 1600
     output_headroom: int = 1024
     token_count_mode: str = "near_limit"
-    daily_limit: int = 20
+    daily_limit: int = 500
     retry_reserve: int = 2
-    rpm: int = 2
-    tpm: int = 32000
+    rpm: int = 15
+    tpm: int = 250000
     max_batches: int = 8
     timeout_ms: int = 90000
 
@@ -45,7 +45,7 @@ class BatchConfig:
             raise ValueError("Batch limits must be integers")
         if not (
             1 <= self.max_jobs <= 25
-            and 1 <= self.daily_limit <= 20
+            and 1 <= self.daily_limit <= 500
             and 0 <= self.retry_reserve < self.daily_limit
             and 1 <= self.rpm <= 1000
             and self.tpm > 0
@@ -92,7 +92,7 @@ def reserve_request(
     tokens: int,
     kind: str,
     retry: bool = False,
-    application_daily_limit: int = 20,
+    application_daily_limit: int = 500,
 ) -> dict:
     """Reserve before I/O; failures/count_tokens consume quota too.
 

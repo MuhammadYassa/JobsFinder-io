@@ -97,7 +97,9 @@ def test_local_history_does_not_consume_email_and_pending_prevents_duplicates(
     assert queued["email"]["status"] == "pending"
     assert generate_reports(engine, tmp_path, slot_key="morning")["duplicate"]
     second = generate_reports(engine, tmp_path, slot_key="evening")
-    assert second["email_count"] == 0
+    # Unattempted morning mail is replaced by one fresh evening report, with
+    # its unreported job retained; it has never been delivered to the recipient.
+    assert second["email_count"] == 1
     with Session(engine) as session:
         assert (
             session.scalar(

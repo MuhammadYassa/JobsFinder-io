@@ -98,11 +98,12 @@ def build_parser() -> argparse.ArgumentParser:
         if name in {"screen", "screen-due", "run-due"}:
             command.add_argument(
                 "--preliminary-model",
-                default=os.getenv("GEMINI_PRELIMINARY_MODEL") or "gemini-3.8-flash",
+                default=os.getenv("GEMINI_PRELIMINARY_MODEL")
+                or "gemini-3.5-flash-lite",
             )
             command.add_argument(
                 "--review-model",
-                default=os.getenv("GEMINI_REVIEW_MODEL") or "gemini-3.8-flash",
+                default=os.getenv("GEMINI_REVIEW_MODEL") or "gemini-3.5-flash-lite",
             )
             command.add_argument(
                 "--max-calls", type=int, default=os.getenv("GEMINI_MAX_CALLS") or 0

@@ -1,18 +1,29 @@
 # JobsFinder.io — Documentation Index
 
-**Project state:** Integrated personal workflow implemented under the owner's complete-system request. See [ADR 0008](adr/0008-integrated-personal-workflow.md), [deployment](deployment.md), [QA review](qa-review.md), and [build progress](build-plan.md). Earlier design documents retain historical proposals; ADR 0008 supersedes deferred-scope statements. Live credentials and hosting remain unverified.
+**Project state:** Integrated personal workflow implemented under the owner's complete-system request. See [ADR 0008](adr/0008-integrated-personal-workflow.md), [deployment](deployment.md), [QA review](qa-review.md), and [build progress](build-plan.md). Earlier design documents retain historical proposals; ADR 0008 supersedes deferred-scope statements. [Final non-AI verification](non-ai-final-verification.md) confirms real monitoring/discovery and one accepted Gmail test. Cloud hosting and AI activation remain unverified.
 
 Current AI provider: [Google Gemini via the official GenAI SDK](adr/0009-gemini-screening.md),
-default `gemini-3.8-flash`. Older OpenAI references in build/review records describe
+default `gemini-3.5-flash-lite`. Older OpenAI references in build/review records describe
 the pre-migration implementation.
 
 Current operation is explicitly non-AI: SMTP alerts, seven-day reports, hourly
 polling and daily discovery run independently of Gemini. See
 [non-AI verification](non-ai-verification.md) and [deployment](deployment.md).
 
+[Completed Flash-Lite accuracy evaluation](flash-lite-final-accuracy.md): all30jobs /
+37policy outcomes verified; source-proof gates correct raw false rejections.
+AI remains disabled. A capped, human-reviewed pilot is reasonable; independent
+eligibility/rejection decisions are not accepted.
+
 [Multi-job Gemini screening](gemini-batch-screening.md) adds a durable queue,
 token-aware batches and separate 09:30/19:30 New York sessions. It remains disabled
-by default; the implementation has only mocked validation, not live acceptance.
+by default; its first controlled live result is documented below.
+
+[Flash-Lite live verification](flash-lite-live-verification.md): one five-job
+batch succeeded with 10 stored policy results and zero-call cache reuse. Larger
+accuracy testing is still needed; evidence-coverage concerns remain. Scheduled
+AI stays disabled. [ADR0011](adr/0011-flash-lite-screening.md) records the switch
+and supplied 500 RPD / 15 RPM / 250000 TPM limits.
 
 [Live Gemini acceptance](gemini-live-verification.md): model access works, but
 generation service/quota failures prevented complete reviews; production AI

@@ -84,6 +84,61 @@ def test_structured_daily_metric_wins_over_short_retry_hint():
     assert "private-project" not in json.dumps(result.payload())
 
 
+@pytest.mark.parametrize(
+    "message,detail",
+    [
+        (
+            "Schema produces a constraint with too many states",
+            "structured_schema_complexity",
+        ),
+        ("Thinking level not supported", "unsupported_thinking_configuration"),
+        ("API key not valid", "invalid_api_key"),
+        ("Invalid response JSON schema", "invalid_structured_schema"),
+        ("Request contains an invalid argument", "unspecified_invalid_argument"),
+    ],
+)
+def test_bad_request_diagnostics_are_fixed_enums_and_secret_safe(message, detail):
+    result = classify_error(api_error(400, message + " private-secret-marker"))
+    assert result.detail == detail
+    assert "private-secret-marker" not in json.dumps(result.payload())
+
+
+def test_structured_field_violation_can_explain_generic_bad_request():
+    result = classify_error(
+        api_error(
+            400,
+            "Request contains an invalid argument",
+            details=[
+                {
+                    "@type": "type.googleapis.com/google.rpc.BadRequest",
+                    "fieldViolations": [
+                        {
+                            "field": "private-field",
+                            "description": "Schema has too many states private-secret",
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    assert result.detail == "structured_schema_complexity"
+    assert "private-" not in json.dumps(result.payload())
+
+
+def test_malformed_bad_request_details_are_safely_ignored():
+    error = api_error(
+        400,
+        "Invalid argument",
+        details=[
+            {
+                "@type": "type.googleapis.com/google.rpc.BadRequest",
+                "fieldViolations": None,
+            }
+        ],
+    )
+    assert classify_error(error).detail == "unspecified_invalid_argument"
+
+
 def test_generic_billing_advice_does_not_override_explicit_minute_metric():
     error = api_error(
         429,

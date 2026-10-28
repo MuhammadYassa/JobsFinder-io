@@ -120,11 +120,22 @@ def enqueue_email(
                 "queued": False,
                 "items": len(existing.payload.get("items", [])),
             }
-        if any(session.scalar(_receipt_query(item)) for item in normalized):
+        receipts = [session.scalar(_receipt_query(item)) for item in normalized]
+        if any(
+            receipt is not None and receipt.status != "superseded"
+            for receipt in receipts
+        ):
             return {"key": key, "status": "conflict", "queued": False, "items": 0}
         path = str(artifact_path) if artifact_path is not None else None
-        for item in normalized:
-            session.add(Delivery(**item, status="pending", artifact_path=path))
+        for item, receipt in zip(normalized, receipts, strict=True):
+            if receipt is None:
+                session.add(Delivery(**item, status="pending", artifact_path=path))
+            else:
+                # A replacement digest reuses the unique per-job reservation;
+                # the old group's immutable body/history remains on TaskRun.
+                receipt.status = "pending"
+                receipt.artifact_path = path
+                receipt.sent_at = None
         session.add(
             TaskRun(
                 task_key=task_key,
@@ -142,6 +153,66 @@ def enqueue_email(
             )
         )
     return {"key": key, "status": "pending", "queued": True, "items": len(normalized)}
+
+
+def supersede_unsent_reports(engine: Engine, key: str) -> int:
+    """Replace never-attempted old digests before composing a fresh report."""
+    return _supersede_unsent_groups(engine, key, "nonai-report:")
+
+
+def supersede_unsent_alerts(engine: Engine, key: str) -> int:
+    """Combine never-attempted old alerts into the current eligible-job group."""
+    return _supersede_unsent_groups(engine, key, "nonai-alert:")
+
+
+def _supersede_unsent_groups(engine: Engine, key: str, prefix: str) -> int:
+    """Release reservations only when no SMTP attempt could have occurred.
+
+    Sent, attempted, and uncertain groups retain their reservations. A retry of
+    an existing group cannot supersede its own original message snapshot.
+    """
+    if not key.startswith(prefix):
+        raise ValueError("Message replacement requires a matching non-AI group")
+    now = utc_now()
+    with Session(engine) as session, session.begin():
+        _write_lock(session)
+        current = "email:" + key
+        if (
+            session.scalar(select(TaskRun).where(TaskRun.task_key == current))
+            is not None
+        ):
+            return 0
+        groups = list(
+            session.scalars(
+                select(TaskRun).where(
+                    TaskRun.task_key.startswith("email:" + prefix),
+                    TaskRun.status.in_(["pending", "failed"]),
+                )
+            )
+        )
+        superseded = 0
+        for group in groups:
+            if group.payload.get("attempts", 0) != 0:
+                continue
+            group.status = "superseded"
+            group.completed_at = now
+            group.payload = {
+                **group.payload,
+                "superseded_by": key,
+                "retryable": False,
+                "next_attempt_at": None,
+                "history": [
+                    *group.payload.get("history", []),
+                    {
+                        "at": now.isoformat(),
+                        "status": "superseded",
+                        "error": "replaced_by_new_group",
+                    },
+                ],
+            }
+            _mark_receipts(session, group.payload, "superseded", now)
+            superseded += 1
+        return superseded
 
 
 def _send(
@@ -265,11 +336,22 @@ def deliver_pending(
             payload = dict(row.payload)
             if payload.get("recipient_hash", fingerprint) != fingerprint:
                 row.status = "failed"
+                row.completed_at = now
                 row.payload = {
                     **payload,
                     "retryable": False,
                     "error": "recipient_changed",
+                    "next_attempt_at": None,
+                    "history": [
+                        *payload.get("history", []),
+                        {
+                            "at": now.isoformat(),
+                            "status": "failed",
+                            "error": "recipient_changed",
+                        },
+                    ],
                 }
+                _mark_receipts(session, payload, "failed", now)
                 result["failed"] += 1
                 continue
             payload.update(

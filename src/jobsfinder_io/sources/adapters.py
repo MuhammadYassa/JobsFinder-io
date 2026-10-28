@@ -168,7 +168,9 @@ class LeverCollector(GreenhouseCollector):
         if raw.get("workplaceType"):
             locations = _locations([locations, raw["workplaceType"]])
         description = raw.get("descriptionPlain")
-        if description is None:
+        if description is None or (
+            isinstance(description, str) and not description.strip()
+        ):
             description = normalize_description(_text(raw.get("description")))
         else:
             description = _text(description)
@@ -186,7 +188,9 @@ class LeverCollector(GreenhouseCollector):
                 ]
             )
         additional = raw.get("additionalPlain")
-        if additional is None:
+        if additional is None or (
+            isinstance(additional, str) and not additional.strip()
+        ):
             additional = normalize_description(_text(raw.get("additional", "")))
         chunks.append(_text(additional))
         return _job(
@@ -251,7 +255,9 @@ class AshbyCollector(GreenhouseCollector):
         # The documented public API does not promise a separate ID field.
         identity = parts[1]
         description = raw.get("descriptionPlain")
-        if description is None:
+        if description is None or (
+            isinstance(description, str) and not description.strip()
+        ):
             description = normalize_description(_text(raw.get("descriptionHtml")))
         secondaries = raw.get("secondaryLocations", [])
         if not isinstance(secondaries, list) or any(

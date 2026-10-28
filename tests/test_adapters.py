@@ -68,6 +68,36 @@ def test_lever_pagination_and_eu():
     assert jobs[0].source_updated_at is None
 
 
+@pytest.mark.parametrize("plain", [None, "", "  "])
+def test_lever_empty_plain_fields_preserve_html_description_and_additional(plain):
+    raw = dict(
+        lever_job(),
+        descriptionPlain=plain,
+        description="<p>Build Python services.</p>",
+        additionalPlain=plain,
+        additional="<p>Visa details unconfirmed.</p>",
+    )
+    job = LeverCollector._normalize(raw)
+    assert "Build Python services." in job.description_text
+    assert "Visa details unconfirmed." in job.description_text
+
+
+@pytest.mark.parametrize("plain", [None, "", "  "])
+def test_ashby_empty_plain_field_preserves_html_description(plain):
+    raw = dict(
+        ashby_job(),
+        descriptionPlain=plain,
+        descriptionHtml="<p>Build Java services.</p>",
+    )
+    with httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, json={"apiVersion": "1", "jobs": [raw]})
+        )
+    ) as client:
+        jobs = AshbyCollector(client, request_interval=0).fetch_jobs("example")
+    assert jobs[0].description_text == "Build Java services."
+
+
 @pytest.mark.parametrize(
     "payload", [None, {}, [None], [dict(lever_job(), applyUrl="javascript:bad")]]
 )

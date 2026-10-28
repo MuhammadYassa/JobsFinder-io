@@ -75,7 +75,7 @@ def seed(
             revision=revision,
             discovery_kind=kind,
             status="active",
-            locations="Germany",
+            locations="United States" if pipeline == "us" else "Germany",
         )
         session.add(post)
         session.flush()

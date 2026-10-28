@@ -38,6 +38,10 @@ ATS_HOSTS = {
     "jobs.eu.lever.co": "lever_eu",
     "jobs.ashbyhq.com": "ashby",
 }
+CAREER_PATH = re.compile(
+    r"(?:^|/)(?:careers?|jobs?|join-us|work-with-us)(?:[/_-]|$)", re.I
+)
+MAX_CAREER_PAGES = 3
 
 
 class Links(HTMLParser):
@@ -70,6 +74,63 @@ def ats_links(page: str, base_url: str) -> list[tuple[str, str, str]]:
         if re.fullmatch(r"[A-Za-z0-9_-]+", token):
             found[provider, token] = f"https://{host}/{token}"
     return [(provider, token, url) for (provider, token), url in sorted(found.items())]
+
+
+def _find_careers_source(
+    engine: Engine, fetcher: Fetcher, url: str, domain: str
+) -> tuple[str, list[tuple[str, str, str]]]:
+    """Follow only explicit, bounded careers links on a confirmed employer site.
+
+    Directory members commonly link homepages rather than career pages. This
+    one-level navigation fills that gap without guessing URLs, trusting new
+    domains or changing the transport's robots/redirect/public-address rules.
+    """
+    page = fetcher.career_page(url)
+    links = ats_links(page, url)
+    if links:
+        return url, links
+    parser = Links()
+    parser.feed(page)
+    candidates = []
+    for href in parser.links:
+        candidate_url = urljoin(url, href).split("#", 1)[0]
+        if candidate_url == url or candidate_url in candidates:
+            continue
+        try:
+            host = public_host(candidate_url)
+        except DiscoveryError:
+            continue
+        if not (host == domain or host.endswith("." + domain)):
+            continue
+        path = urlsplit(candidate_url).path
+        if not CAREER_PATH.search(path) and not host.startswith(("careers.", "jobs.")):
+            continue
+        candidates.append(candidate_url)
+        if len(candidates) == MAX_CAREER_PAGES:
+            break
+    for candidate_url in candidates:
+        evidence = {"seed_url": url, "official_domain": domain}
+        try:
+            links = ats_links(fetcher.career_page(candidate_url), candidate_url)
+        except DiscoveryError as exc:
+            _audit(
+                engine,
+                candidate_url,
+                "official_careers_navigation",
+                "failed",
+                {**evidence, "error": str(exc)},
+            )
+            continue
+        _audit(
+            engine,
+            candidate_url,
+            "official_careers_navigation",
+            "source_link_found" if links else "no_supported_source",
+            evidence,
+        )
+        if links:
+            return candidate_url, links
+    return url, []
 
 
 def _audit(engine: Engine, url: str, method: str, status: str, payload: dict) -> None:
@@ -389,9 +450,20 @@ def _discover(
             domain = normalize_domain(candidate.get("official_domain") or host)
             if host in ATS_HOSTS or not (host == domain or host.endswith("." + domain)):
                 raise DiscoveryError("unconfirmed_official_association")
-            links = ats_links(fetcher.career_page(url), url)
+            careers_url, links = _find_careers_source(engine, fetcher, url, domain)
             if not links:
                 raise DiscoveryError("no_supported_source")
+            if careers_url != url:
+                candidate = {
+                    **candidate,
+                    "careers_url": careers_url,
+                    "provenance": {
+                        "method": "official_careers_navigation",
+                        "seed_url": url,
+                        "source": candidate.get("provenance", "confirmed_import"),
+                    },
+                }
+                url = careers_url
             confirmed = []
             for provider, token, board_url in links[:10]:
                 with Session(engine) as session:

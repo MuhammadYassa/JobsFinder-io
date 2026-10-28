@@ -13,7 +13,8 @@ _UNRELATED = re.compile(
     r"\b(account executive|sales representative|recruiter|human resources|nurse|"
     r"physician|accountant|legal counsel|warehouse associate|truck driver|"
     r"customer service representative|marketing manager|office manager|"
-    r"executive assistant|cashier|retail associate|security guard)\b",
+    r"executive assistant|cashier|retail associate|security guard|"
+    r"talent acquisition partner|talent acquisition sourcer|recruiting sourcer)\b",
     re.I,
 )
 _CODING = re.compile(
@@ -53,6 +54,30 @@ _COUNTRIES = (
     "Mexico",
     "Israel",
     "South Africa",
+    "South Korea",
+    "Republic of Korea",
+    "Malaysia",
+    "China",
+    "Philippines",
+    "Latvia",
+    "Thailand",
+    "Vietnam",
+    "Indonesia",
+    "Cambodia",
+    "Taiwan",
+    "Hong Kong",
+    "Finland",
+    "Denmark",
+    "Norway",
+    "Belgium",
+    "Italy",
+    "Czechia",
+    "Czech Republic",
+    "Romania",
+    "Estonia",
+    "Lithuania",
+    "Bulgaria",
+    "Turkey",
 )
 
 
@@ -74,7 +99,23 @@ def location_group(locations: str) -> tuple[str, str]:
         for country in _COUNTRIES
         if re.search(r"\b" + re.escape(country) + r"\b", locations, re.I)
     ]
+    if re.search(r"\b(England|Scotland|Wales|Northern Ireland)\b", locations, re.I):
+        countries = [
+            country
+            for country in countries
+            if country != "Ireland"
+            or not re.search(r"\bNorthern Ireland\b", locations, re.I)
+        ]
+        if "United Kingdom" not in countries:
+            countries.append("United Kingdom")
     us = bool(_US.search(locations))
+    foreign_city_hint = re.search(
+        r"\b(London|Berlin|Dublin|Dubai|Toronto|Vancouver|Paris|Amsterdam|Sydney|Seoul)\b",
+        locations,
+        re.I,
+    )
+    if us and foreign_city_hint and not countries:
+        return "unknown", "Mixed or ambiguous geography; inspect official posting"
     if us and countries:
         return "unknown", "Multiple countries (including US): " + ", ".join(countries)
     if us:
@@ -87,6 +128,20 @@ def location_group(locations: str) -> tuple[str, str]:
 def requirement_excerpts(description: str) -> list[str]:
     """Return exact, bounded source excerpts rather than invented requirements."""
     parts = re.split(r"\n+|(?<=[.!?])\s+", description)
+    qualifications = [
+        part.strip()
+        for part in parts
+        if re.search(
+            r"\b(years?|experience|preferred|require[ds]?|qualifications?|graduate)\b",
+            part,
+            re.I,
+        )
+    ]
+    numeric_years = [
+        part
+        for part in qualifications
+        if re.search(r"\d[^.!?\n]{0,15}\byears?\b", part, re.I)
+    ]
     selected = [
         part.strip()
         for part in parts
@@ -95,4 +150,5 @@ def requirement_excerpts(description: str) -> list[str]:
             r"\b(years?|experience|preferred|require[ds]?|graduate)\b", part, re.I
         )
     ]
-    return [part[:500] for part in selected[:4]]
+    prioritized = list(dict.fromkeys([*numeric_years, *qualifications, *selected]))
+    return [part[:500] for part in prioritized[:4]]
