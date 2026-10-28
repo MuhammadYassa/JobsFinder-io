@@ -46,7 +46,7 @@ def posting(source_id, **kwargs):
 
 def test_migration_schema_parity_downgrade_and_repeat_upgrade(database):
     path, engine = database
-    expected = {"employers", "job_sources", "postings", "poll_runs", "alembic_version"}
+    expected = set(Base.metadata.tables) | {"alembic_version"}
     assert set(inspect(engine).get_table_names()) == expected
     with engine.connect() as connection:
         assert (

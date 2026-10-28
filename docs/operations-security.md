@@ -1,5 +1,10 @@
 # Operations, Cost, and Security (Proposed v0.1)
 
+> Operational implementation now exists; [deployment](deployment.md) and
+> [ADR 0008](adr/0008-integrated-personal-workflow.md) are authoritative.
+> Scheduling is host cron invoking `run-due`, not GitHub Actions. Request-count
+> caps are implemented; dollar/monthly caps require provider account controls.
+
 ## Scheduling
 
 - Collector: configurable **hourly target** for healthy, supported public boards; tolerate source-specific throttling.

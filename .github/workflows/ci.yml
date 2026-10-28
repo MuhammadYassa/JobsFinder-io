@@ -66,4 +66,6 @@ jobs:
           docker compose run --rm jobsfinder jobsfinder-io list-sources | grep -F ci-example
           docker compose run --rm jobsfinder alembic upgrade head
           docker compose run --rm jobsfinder alembic check
-          docker compose run --rm jobsfinder python -c 'import sqlite3; db = sqlite3.connect("data/jobsfinder.db"); tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type = ?", ("table",))}; assert tables == {"employers", "job_sources", "postings", "poll_runs", "alembic_version"}'
+          docker compose run --rm jobsfinder python -c 'import sqlite3; db = sqlite3.connect("data/jobsfinder.db"); tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type = ?", ("table",))}; assert tables == {"employers", "job_sources", "postings", "poll_runs", "screening_results", "deliveries", "discovery_attempts", "task_runs", "alembic_version"}'
+          docker compose run --rm jobsfinder jobsfinder-io health
+          docker compose run --rm jobsfinder jobsfinder-io run-due

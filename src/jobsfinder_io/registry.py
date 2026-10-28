@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from jobsfinder_io.persistence.models import Employer, JobSource, Posting, utc_now
+from jobsfinder_io.sources.adapters import PROVIDERS, source_endpoint
 
 
 class RegistryError(ValueError):
@@ -52,13 +53,13 @@ def add_source(
     poll_interval_minutes: int = 60,
 ) -> JobSource:
     provider = provider.strip().lower()
-    if provider != "greenhouse":
-        raise RegistryError("Unsupported provider; Phase 1 supports greenhouse only")
+    if provider not in PROVIDERS:
+        raise RegistryError("Unsupported provider")
     # Keep token case: Phase 1 has no evidence that differently cased boards
     # represent the same source. Strip surrounding whitespace only.
     board_identifier = board_identifier.strip()
     if not re.fullmatch(r"[A-Za-z0-9_-]+", board_identifier):
-        raise RegistryError("Use a Greenhouse board token, not a URL or empty value")
+        raise RegistryError("Use an ATS board token, not a URL or empty value")
     careers_url = careers_url.strip()
     try:
         url = urlsplit(careers_url)
@@ -83,7 +84,7 @@ def add_source(
         provider=provider,
         board_identifier=board_identifier,
         careers_url=careers_url,
-        api_endpoint=f"https://boards-api.greenhouse.io/v1/boards/{board_identifier}/jobs",
+        api_endpoint=source_endpoint(provider, board_identifier),
         poll_interval_minutes=poll_interval_minutes,
     )
     try:

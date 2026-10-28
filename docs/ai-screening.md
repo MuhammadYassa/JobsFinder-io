@@ -1,5 +1,17 @@
 # AI Screening and Eligibility (Proposed v0.1)
 
+> Structured two-stage screening, evidence validation, versioned cache and daily
+> request caps are implemented. Private configuration is documented in
+> [deployment](deployment.md). The conceptual schema below is historical;
+> `screening.SCHEMA` is authoritative. Overrides are deferred. Broad country/start
+> interpretation remains reviewable; no live model quality evaluation is claimed.
+
+Current provider: Google Gemini via `google-genai`, default `gemini-3.8-flash`.
+See [ADR 0009](adr/0009-gemini-screening.md) for structured output, request-budget
+and cache migration details. `screen_jobs()` calls `_request()` for each stage;
+the SDK parses the response, and `validate_result()` independently checks job
+evidence before persistence. Cover letters remain local and use no AI calls.
+
 ## Principle
 
 **Deterministic code monitors; AI interprets.** The model must not be the primary source of job facts. It reasons over retrieved, attributable descriptions, role/applicant questions when accessible, and private eligibility policies; outputs typed decisions with evidence and uncertainty. Prefer **review** over incorrect rejection of possibly eligible roles.

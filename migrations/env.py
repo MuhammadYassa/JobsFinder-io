@@ -29,6 +29,13 @@ else:
     engine = make_engine(url.database)
     try:
         with engine.connect() as connection:
+            # SQLite batch migrations rebuild referenced tables. Disable FK
+            # enforcement only on this migration connection, before BEGIN;
+            # check every relationship before committing the migration.
+            raw = connection.connection.driver_connection
+            raw.autocommit = True
+            raw.execute("PRAGMA foreign_keys=OFF")
+            raw.autocommit = False
             context.configure(
                 connection=connection,
                 target_metadata=Base.metadata,
@@ -37,5 +44,14 @@ else:
             )
             with context.begin_transaction():
                 context.run_migrations()
+                violations = connection.exec_driver_sql(
+                    "PRAGMA foreign_key_check"
+                ).fetchall()
+                if violations:
+                    raise RuntimeError("Migration produced foreign-key violations")
+            connection.commit()
+            raw.autocommit = True
+            raw.execute("PRAGMA foreign_keys=ON")
+            raw.autocommit = False
     finally:
         engine.dispose()

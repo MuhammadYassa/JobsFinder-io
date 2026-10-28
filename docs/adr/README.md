@@ -2,6 +2,10 @@
 
 Each ADR records the problem, options, proposed/accepted choice, tradeoffs, and consequences. **Status: Proposed** means the project owner has **not yet approved** implementation on that basis.
 
+- [0009 — Gemini screening](0009-gemini-screening.md) — Accepted provider migration; supersedes OpenAI portions of ADR 0008.
+
+- [0008 — Integrated personal workflow](0008-integrated-personal-workflow.md) — Accepted by complete-system implementation request; supersedes earlier deferred scope.
+
 - [0001 — Modular monolith for MVP](0001-modular-monolith.md)
 - [0002 — Public-source polling and provenance](0002-poll-and-provenance.md)
 - [0003 — Deterministic pipeline with bounded AI](0003-ai-gated-screening.md)
@@ -21,3 +25,5 @@ When approved, change an ADR's status to **Accepted** and record the date. A new
 - 0005 — Accepted
 - 0006 — Accepted
 - 0007 — Accepted (Phase 3 Docker/CI scope)
+- [0010 — Multi-job Gemini screening](0010-multi-job-gemini-screening.md) — Accepted;
+  implementation remains disabled pending controlled live acceptance.

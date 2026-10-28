@@ -1,6 +1,26 @@
 # JobsFinder.io — Documentation Index
 
-**Project state:** Phases 1–3 implemented. Local registry, four-table persistence, migrations, argparse CLI, manual Greenhouse collection, Docker Compose packaging, and CI configuration are available. Later features remain unimplemented. Decisions explicitly accepted by the owner are recorded as **Accepted**; others remain **Proposed**.
+**Project state:** Integrated personal workflow implemented under the owner's complete-system request. See [ADR 0008](adr/0008-integrated-personal-workflow.md), [deployment](deployment.md), [QA review](qa-review.md), and [build progress](build-plan.md). Earlier design documents retain historical proposals; ADR 0008 supersedes deferred-scope statements. Live credentials and hosting remain unverified.
+
+Current AI provider: [Google Gemini via the official GenAI SDK](adr/0009-gemini-screening.md),
+default `gemini-3.8-flash`. Older OpenAI references in build/review records describe
+the pre-migration implementation.
+
+Current operation is explicitly non-AI: SMTP alerts, seven-day reports, hourly
+polling and daily discovery run independently of Gemini. See
+[non-AI verification](non-ai-verification.md) and [deployment](deployment.md).
+
+[Multi-job Gemini screening](gemini-batch-screening.md) adds a durable queue,
+token-aware batches and separate 09:30/19:30 New York sessions. It remains disabled
+by default; the implementation has only mocked validation, not live acceptance.
+
+[Live Gemini acceptance](gemini-live-verification.md): model access works, but
+generation service/quota failures prevented complete reviews; production AI
+screening is not yet accepted.
+
+[Reliability diagnosis](gemini-reliability.md) confirms a live 20-request daily
+quota rejection and documents persistent provider backoff, AI Studio quota checks
+and the deliberately stopped single-attempt diagnostic.
 
 | Document | Purpose |
 | --- | --- |

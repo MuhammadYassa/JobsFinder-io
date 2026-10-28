@@ -4,11 +4,26 @@ import httpx
 import pytest
 from alembic import command
 from alembic.config import Config
+from google import genai
+from google.genai import types
 from sqlalchemy.orm import Session
 
 from jobsfinder_io.persistence.database import make_engine
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def gemini_client(*, transport, attempts=1):
+    """Exercise the real SDK's serialization over a fully mocked HTTP transport."""
+    return genai.Client(
+        api_key="synthetic-placeholder",
+        vertexai=False,
+        http_options=types.HttpOptions(
+            retry_options=types.HttpRetryOptions(attempts=attempts),
+            client_args={"transport": transport, "trust_env": False},
+            async_client_args={"trust_env": False},
+        ),
+    )
 
 
 @pytest.fixture(autouse=True)

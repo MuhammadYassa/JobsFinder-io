@@ -1,5 +1,10 @@
 # Source Discovery and Monitoring Strategy (Proposed v0.1)
 
+> Current implementation: Greenhouse, Lever global/EU and Ashby adapters,
+> source polling/reconciliation, candidate discovery and optional Brave search
+> are implemented. See [ADR 0008](adr/0008-integrated-personal-workflow.md) and
+> [discovery configuration](../src/jobsfinder_io/discovery/README.md).
+
 ## Purpose
 
 Detect newly visible jobs from **employer-owned or employer-controlled public listings** earlier than search-index-only workflows. Maintain a broad backfill path for employers not yet monitored. There is no universal Greenhouse/Lever/Ashby endpoint that lists all companies.

@@ -49,6 +49,7 @@ class GreenhouseJob:
     content_hash: str
     source_published_at: datetime | None = None
     date_provenance: str = "unknown:greenhouse.first_published_not_checked"
+    locations: str = ""
 
 
 class _DescriptionParser(HTMLParser):
@@ -142,8 +143,14 @@ def _normalize_job(raw: object) -> GreenhouseJob:
         raise ValueError("Invalid requisition ID")
     title = " ".join(title.split())
     description = normalize_description(content)
+    location = raw.get("location") or {}
+    if not isinstance(location, dict) or not isinstance(location.get("name", ""), str):
+        raise ValueError("Invalid location")
+    locations = " ".join(location.get("name", "").split())
     digest = hashlib.sha256(
-        json.dumps([title, description, link, requisition], ensure_ascii=False).encode()
+        json.dumps(
+            [title, description, link, requisition, locations], ensure_ascii=False
+        ).encode()
     ).hexdigest()
     return GreenhouseJob(
         external_posting_id=identity,
@@ -154,6 +161,7 @@ def _normalize_job(raw: object) -> GreenhouseJob:
         description_text=description,
         source_updated_at=parse_timestamp(raw.get("updated_at")),
         content_hash=digest,
+        locations=locations,
     )
 
 

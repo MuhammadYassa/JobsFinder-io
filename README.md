@@ -1,154 +1,141 @@
 # JobsFinder.io
 
-A personal job discovery and monitoring project. Phase 1 provides an offline
-employer/source registry, SQLite persistence, and an argparse CLI. Phase 2 adds
-manual Greenhouse checks and safe posting comparisons. Screening, scheduling,
-discovery, and notifications remain deferred.
+Personal employer discovery, public career-board monitoring, and evidence-grounded
+job screening. Python 3.12+, uv, SQLAlchemy, Alembic, SQLite, argparse and Docker.
+It generates personal job reports and alerts; it never submits applications.
+The current unattended workflow runs without AI.
 
-Phase 3 adds Docker Compose and GitHub Actions CI. It does not add a scheduler
-or change collection behavior.
+Supports Greenhouse, Lever (global/EU), and Ashby. Complete polls preserve source
+identity, locations, separate publication/update/discovery/verification times,
+content revisions and historical jobs. First scans are baselines. Two complete
+successful absences close a posting; failed or incomplete polls never do.
 
-Requires Python 3.12+ and uv. From the repository root:
+## Local setup
 
-```powershell
+```sh
 uv sync --locked
 uv run alembic upgrade head
+uv run jobsfinder-io --help
+uv run jobsfinder-io health
+```
+
+The default database is `data/jobsfinder.db`. `--db PATH` precedes the command.
+Migrate explicitly before operating; stop all writers before migrations/upgrades.
+
+Register a real employer and board, then confirm its public official association:
+
+```sh
 uv run jobsfinder-io add-employer --name "Example" --official-domain example.com
 uv run jobsfinder-io add-source --employer-id 1 --provider greenhouse --board-identifier example --careers-url https://example.com/careers
-uv run jobsfinder-io list-sources
+uv run jobsfinder-io validate-source 1 --confirm-official-association --confirm-public-access
+uv run jobsfinder-io poll-source --source-id 1
 uv run jobsfinder-io list-postings
 ```
 
-The example employer is synthetic. Substitute the actual employer and board token
-for real use. Adding a source creates a `candidate`. After personally verifying
-its official employer association and public access, record your confirmation:
+These identifiers are synthetic. Supported provider names: `greenhouse`, `lever`,
+`lever_eu`, `ashby`. No API key is required for public ATS collection.
 
-```powershell
-uv run jobsfinder-io validate-source 1 --confirm-official-association --confirm-public-access
+## Discovery, screening and delivery
+
+Put private JSON configuration in ignored `data/private/`. Candidate format:
+
+```json
+[{"name":"Example","careers_url":"https://example.com/careers"}]
 ```
 
-This records manual verification without network requests. Repeating it on a
-validated source preserves the original validation time. The schema has no field
-for a verification note; verification remains the owner's responsibility.
+Import only official employer pages. Discovery checks robots rules and outbound
+ATS links, validates complete boards, and records successful/failed checks.
+Optional Brave search can expand the candidate queue; unknown search domains
+require confirmation before activation. Coverage depends on supplied pages and
+queries. See [discovery configuration](src/jobsfinder_io/discovery/README.md).
 
-To check that registered, validated source and inspect its saved jobs:
-
-```powershell
-uv run jobsfinder-io poll-source --source-id 1
-uv run jobsfinder-io list-postings --source-id 1
+```sh
+uv run jobsfinder-io discover --candidates data/private/candidates.json
+uv run jobsfinder-io poll-due
+uv run jobsfinder-io report --local-only
+uv run jobsfinder-io test-email
+uv run jobsfinder-io notify
+uv run jobsfinder-io run-due --candidates data/private/candidates.json
 ```
 
-`poll-source` makes public read-only Greenhouse requests without an API key. It
-never promotes candidate sources automatically. Candidate and paused sources are
-refused without HTTP requests. Each request to check an existing source records a
-poll attempt. Source IDs that do not exist return an error.
+For limited screening use `screen --posting-id 34 --posting-id 68 --max-calls 8`
+with the intended `--db` and `--profile`; repeated IDs select a small batch.
+[Live Gemini verification](docs/gemini-live-verification.md) found service/quota
+failures, so production AI screening has not yet passed acceptance.
 
-The first complete successful check is a baseline. Later checks report newly
-observed IDs as `new`, meaningful content changes as `updated`, and returning jobs
-as `reappeared`. These labels do not claim a job was published today. Jobs absent
-from one complete check become `missing_pending`; a second complete miss makes
-them `closed`. Failed and partial checks preserve all job data and states.
+`screen` now batches up to 10 jobs per request by default. Separate `screen-due`
+sessions target 9:30 AM/7:30 PM New York and remain disabled. See
+[batch configuration and later live-test instructions](docs/gemini-batch-screening.md).
 
-The collector also looks for `first_published` through individual-job details.
-Unknown dates stay unknown. A complete list can succeed with publication lookup
-warnings: see `enrichment_failed` in the summary and `date_provenance` in stored
-postings. At most 100 detail lookups are attempted per check; failed/deferred
-lookups can be retried on later checks. Exit code is 0 for a complete list,
-including enrichment warnings, and 1 for a failed, partial, or refused check.
+`run-due` performs one scheduled tick. Run every five minutes on an always-on
+host; per-source intervals normally permit hourly polls. Discovery runs at 6 AM;
+US/international reports run at 10 AM/8 PM America/New_York with DST handling.
+Persistent receipts prevent repeats; an OS lock prevents overlapping CLI work
+and enables interrupted-poll recovery. Network calls hold no DB transaction.
+These operating commands never invoke Gemini. Leave `GEMINI_MAX_CALLS=0`.
 
-Requests have timeouts, at most three attempts, backoff, and one-second spacing.
-The command runs only when invoked; it does not schedule checks or automatically
-use the source's configured polling interval. Avoid launching overlapping checks
-for the same source. A hard process kill can leave a `running` poll that blocks
-later checks; see the [Phase 2 recovery notes](docs/phase-2-greenhouse-design.md).
+Screening uses separate US/international policies, two structured Google Gemini review
+stages, exact evidence quotes, private profile/model/prompt version caching and a
+durable daily request cap. Missing credentials and ambiguous evidence remain
+reviewable. Define your actual education, experience, availability and immigration
+constraints in the private profile; see [screening design](docs/ai-screening.md).
+The source code contains no personal profile.
 
-The default database is `data/jobsfinder.db`, created by Alembic. Database files,
-local data, environments, and `.env` files are ignored by Git. Keep private
-profiles, resumes, and credentials outside tracked files.
+Screening uses the official `google-genai` SDK with `gemini-3.8-flash` by default.
+Configure `GEMINI_PRELIMINARY_MODEL`, `GEMINI_REVIEW_MODEL`, and `GEMINI_MAX_CALLS`
+as needed. The OpenAI integration has been replaced; see
+[ADR 0009](docs/adr/0009-gemini-screening.md).
 
-For another database, copy `alembic.ini` to an ignored file such as
-`data/local.ini`, set `script_location` to the absolute repository `migrations`
-directory, and change `sqlalchemy.url` to `sqlite:///data/other.db`. Then run:
+Seven-day non-AI reports include baseline and missed discoveries, distinguish
+source publication from discovery and uncertain freshness, and quote requirements.
+They do not rank eligibility, verify sponsorship, or generate cover letters.
+Local files remain available, and SMTP sends grouped alerts/reports exclusively
+to your configured personal address. Durable receipts prevent unchanged repeats;
+ambiguous delivery requires review. No employer messages or applications are sent.
 
-```powershell
-uv run alembic -c data/local.ini upgrade head
-uv run jobsfinder-io --db data/other.db list-sources
+## Docker and operation
+
+```sh
+mkdir -p data/private
+cp .env.example .env
+docker compose build
+docker compose run --rm jobsfinder alembic upgrade head
+docker compose run --rm jobsfinder jobsfinder-io health
 ```
 
-`--db` goes before the command. Each command supports `--help`.
-`list-postings --source-id 1` inspects stored jobs. Empty lists print no rows.
-Duplicate sources return an error without
-changing the original record. Matching company names remain separate employers.
+On PowerShell use `New-Item -ItemType Directory -Force data/private` and
+`Copy-Item .env.example .env`. Compose reads `.env`; local uv commands use shell
+environment variables or explicit CLI options (no automatic dotenv loading).
+Configure private files before `run-due`. The bind-mounted data directory survives
+container upgrades. Set Linux UID/GID as described in the deployment guide.
 
-Run the offline tests and style checks:
+Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USERNAME`,
+`SMTP_PASSWORD`, `SMTP_FROM`, and your personal `SMTP_TO` for email.
+No credentials are needed for monitoring, imported-page discovery or local reports.
+Search remains optional; AI stays disabled in unattended operation.
 
-```powershell
+[Deployment instructions](docs/deployment.md) include cron, privacy, persistent
+storage, backups and recovery. No schedule is installed, image published, or
+external infrastructure deployed by the project. CI validates the app and Docker;
+it never operates the persistent production database.
+
+## Validation and learning
+
+```sh
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 ```
 
-Run with Docker Desktop (Linux containers) or Docker Engine with Compose:
+Tests migrate temporary databases and block live HTTP. The end-to-end test uses
+synthetic discovery pages, ATS data and AI responses; it is not a live-production
+claim. See [QA review](docs/qa-review.md) and [build progress](docs/build-plan.md).
 
-```powershell
-docker compose build
-# Create the data folder once; this PowerShell command also handles an existing folder.
-New-Item -ItemType Directory -Force data
-docker compose run --rm jobsfinder alembic upgrade head
-docker compose run --rm jobsfinder jobsfinder-io --help
-docker compose run --rm jobsfinder jobsfinder-io list-sources
-```
+Learning checkpoint: trace `cli.main()` → `operations.run_due()` →
+`ingestion.polling.poll_source()` → `apply_snapshot()`. Then follow
+`reporting.non_ai.generate_reports()` → `delivery.enqueue_email()` →
+`delivery.deliver_pending()`. TaskRun stores each grouped message and Delivery
+reserves each posting revision. Those receipts make repeated ticks safe.
 
-On Linux/macOS, use `mkdir -p data` instead of `New-Item`. On Linux, also set
-`export LOCAL_UID=$(id -u)` and `export LOCAL_GID=$(id -g)` before running Compose
-so the non-root container user can write to your directory.
-
-Every existing CLI command works by placing `jobsfinder-io` after the service name:
-
-```powershell
-docker compose run --rm jobsfinder jobsfinder-io add-employer --name "Example" --official-domain example.com
-docker compose run --rm jobsfinder jobsfinder-io add-source --employer-id 1 --provider greenhouse --board-identifier example --careers-url https://example.com/careers
-docker compose run --rm jobsfinder jobsfinder-io validate-source 1 --confirm-official-association --confirm-public-access
-docker compose run --rm jobsfinder jobsfinder-io poll-source --source-id 1
-docker compose run --rm jobsfinder jobsfinder-io list-postings --source-id 1
-```
-
-Use a real, personally verified employer/board before polling; the example is
-synthetic. SQLite lives at `./data/jobsfinder.db` on your computer, mounted as
-`/app/data/jobsfinder.db`. Removing a container, running `docker compose down`, or
-rebuilding the image preserves that directory. Back it up separately and keep
-`--db` paths under `data/` when using Docker. To mount another existing directory,
-set `JOBSFINDER_DATA_DIR` to its absolute path. No database is copied into the image.
-
-The default container command prints CLI help and exits. Use `docker compose run
---rm` for these one-shot commands; no background service or automatic migrations
-run. After code/dependency changes, rebuild and explicitly run `alembic upgrade
-head` again. The runtime image installs locked application dependencies without
-pytest/Ruff; run tests locally with uv or through CI.
-
-CI runs on pushes to `main` and pull requests. It installs Python and pinned uv,
-uses `uv.lock`, runs Ruff and the entire offline test suite (including Alembic
-migration tests), then builds the image and exercises container migrations and CLI
-persistence across separate containers. It has read-only repository permissions
-and does not publish images or deploy anything. See
-[Docker/CI design notes](docs/adr/0007-docker-and-ci.md).
-
-Tests migrate temporary databases and never use your registry. Installing
-dependencies requires package access once; tests need no internet or API keys.
-HTTP responses are mocked, and real HTTP transport is blocked during tests.
-
-Learning checkpoint: trace `cli.main()` → `registry.add_source()` → `JobSource`
-in `persistence/models.py`. The CLI opens one transaction, the service checks
-inputs, and the database enforces identity and relationships. Success commits;
-an exception rolls back. `make_engine()` enables foreign keys on every SQLite
-connection. Alembic creates the schema; importing models never creates tables.
-
-For collection, trace `cli.main()` → `poll_source()` in `ingestion/polling.py` →
-`GreenhouseCollector.fetch_jobs()` in `sources/greenhouse.py` → `apply_snapshot()`.
-The service first commits a running poll record, releases the database connection
-while fetching, then commits posting changes and successful poll bookkeeping
-together. If that final transaction fails, posting changes roll back and the
-service attempts to record the failure separately.
-
-See the [Phase 2 specification and implementation notes](docs/phase-2-greenhouse-design.md),
-[documentation index](docs/README.md), and [roadmap](docs/roadmap.md).
+See [documentation index](docs/README.md) and [ADR 0008](docs/adr/0008-integrated-personal-workflow.md)
+for current architecture and tradeoffs.

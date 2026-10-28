@@ -1,5 +1,12 @@
 # Persistent Data Model (Planning v0.3)
 
+> Current schema: original four tables plus `screening_results`, `deliveries`,
+> `discovery_attempts`, `task_runs`, added by migration `a812c0d19b01`.
+> Postings now include locations, last_changed_at, discovery_kind and revision.
+> [ORM models](../src/jobsfinder_io/persistence/models.py) and Alembic are
+> authoritative. Deferred entities below are historical proposals; snapshots,
+> overrides and application tracking were not added. See [ADR 0008](adr/0008-integrated-personal-workflow.md).
+
 **Approved scope:** exactly four initial tables (`employers`, `job_sources`, `postings`, `poll_runs`) with **SQLAlchemy 2.x + Alembic** (ADR 0006) and local **SQLite** (ADR 0004). Field lists below describe broader future design; the approved Phase 1 specification takes precedence. All timestamps use an explicit UTC convention at the application boundary; SQLite does not enforce timezone-aware datetime storage. Convert to `America/New_York` for reports.
 
 **Phase 1 implementation:** The approved field lists and identity constraints in

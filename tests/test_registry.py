@@ -86,7 +86,6 @@ def test_invalid_employer(session, name, domain):
 @pytest.mark.parametrize(
     "field,value",
     [
-        ("provider", "lever"),
         ("provider", "unknown"),
         ("board_identifier", ""),
         ("board_identifier", "https://example.com"),

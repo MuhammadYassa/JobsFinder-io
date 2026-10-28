@@ -2,7 +2,14 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 
@@ -50,7 +57,10 @@ class JobSource(Base):
     __tablename__ = "job_sources"
     __table_args__ = (
         UniqueConstraint("provider", "board_identifier", name="uq_source_board"),
-        CheckConstraint("provider = 'greenhouse'", name="supported_provider"),
+        CheckConstraint(
+            "provider IN ('greenhouse', 'lever', 'lever_eu', 'ashby')",
+            name="supported_provider",
+        ),
         CheckConstraint("length(trim(board_identifier)) > 0", name="source_board"),
         CheckConstraint(
             "status IN ('candidate', 'validated', 'paused', 'error')",
@@ -112,6 +122,12 @@ class Posting(Base):
     first_seen_at: Mapped[datetime] = mapped_column(UTCDateTime())
     last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime())
     content_hash: Mapped[str] = mapped_column(String)
+    locations: Mapped[str] = mapped_column(default="", server_default="")
+    last_changed_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    discovery_kind: Mapped[str] = mapped_column(
+        default="baseline", server_default="baseline"
+    )
+    revision: Mapped[int] = mapped_column(default=1, server_default="1")
     status: Mapped[str] = mapped_column(default="unknown", server_default="unknown")
     source: Mapped[JobSource] = relationship(back_populates="postings")
 
@@ -141,3 +157,58 @@ class PollRun(Base):
     post_count: Mapped[int | None]
     error_code: Mapped[str | None]
     source: Mapped[JobSource] = relationship(back_populates="poll_runs")
+
+
+class ScreeningResult(Base):
+    __tablename__ = "screening_results"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    posting_id: Mapped[int] = mapped_column(ForeignKey("postings.id"), index=True)
+    content_hash: Mapped[str]
+    profile_hash: Mapped[str]
+    policy_version: Mapped[str]
+    prompt_version: Mapped[str]
+    model: Mapped[str]
+    stage: Mapped[str]
+    pipeline: Mapped[str]
+    disposition: Mapped[str]
+    score: Mapped[int]
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class Delivery(Base):
+    __tablename__ = "deliveries"
+    __table_args__ = (
+        UniqueConstraint(
+            "posting_id", "revision", "pipeline", "channel", name="uq_delivery_identity"
+        ),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    posting_id: Mapped[int] = mapped_column(ForeignKey("postings.id"))
+    revision: Mapped[int]
+    pipeline: Mapped[str]
+    channel: Mapped[str]
+    status: Mapped[str] = mapped_column(default="pending")
+    artifact_path: Mapped[str | None]
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    sent_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class DiscoveryAttempt(Base):
+    __tablename__ = "discovery_attempts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    candidate_url: Mapped[str]
+    method: Mapped[str]
+    status: Mapped[str]
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class TaskRun(Base):
+    __tablename__ = "task_runs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    task_key: Mapped[str] = mapped_column(unique=True)
+    status: Mapped[str]
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from jobsfinder_io.persistence.models import JobSource, PollRun, Posting, utc_now
 from jobsfinder_io.registry import RegistryError
+from jobsfinder_io.sources.adapters import make_collector
 from jobsfinder_io.sources.greenhouse import (
     CollectorError,
     GreenhouseCollector,
@@ -50,10 +51,15 @@ def poll_source(
     if collector is None:
         # No environment proxies, ambient credentials, or redirect following.
         with httpx.Client(trust_env=False) as client:
+            with Session(engine) as session:
+                source = session.get(JobSource, source_id)
+                if source is None:
+                    raise RegistryError(f"Source {source_id} does not exist")
+                provider = source.provider
             return poll_source(
                 engine,
                 source_id,
-                collector=GreenhouseCollector(client),
+                collector=make_collector(provider, client),
                 detail_budget=detail_budget,
             )
 
@@ -89,7 +95,7 @@ def poll_source(
             )
             return summary
         if (
-            source.provider != "greenhouse"
+            source.provider not in {"greenhouse", "lever", "lever_eu", "ashby"}
             or source.validated_at is None
             or source.status not in {"validated", "error"}
         ):
@@ -98,6 +104,7 @@ def poll_source(
             )
             return summary
         token = source.board_identifier
+        provider = source.provider
         existing = list(
             session.scalars(select(Posting).where(Posting.source_id == source_id))
         )
@@ -112,9 +119,16 @@ def poll_source(
     try:
         jobs = collector.fetch_jobs(token)
         # Keep list HTTP status independent of optional detail requests.
-        jobs = _enrich_jobs(
-            collector, token, jobs, known_ids, needs_publication, summary, detail_budget
-        )
+        if provider == "greenhouse":
+            jobs = _enrich_jobs(
+                collector,
+                token,
+                jobs,
+                known_ids,
+                needs_publication,
+                summary,
+                detail_budget,
+            )
         with Session(engine) as session, session.begin():
             run = session.get(PollRun, summary.run_id)
             source = session.get(JobSource, source_id)
@@ -232,6 +246,10 @@ def apply_snapshot(
                 source_id=source_id,
                 external_posting_id=identity,
                 first_seen_at=observed_at,
+                last_changed_at=observed_at,
+                discovery_kind="baseline" if baseline else "new",
+                revision=1,
+                date_provenance=job.date_provenance,
             )
             session.add(post)
             if baseline:
@@ -239,11 +257,15 @@ def apply_snapshot(
             else:
                 summary.new += 1
         elif post.status in {"missing_pending", "closed"}:
+            post.revision += 1
+            post.last_changed_at = observed_at
             summary.reappeared += 1
             # Reappearance and content edits may both be useful information.
             if post.content_hash != job.content_hash:
                 summary.updated += 1
         elif post.content_hash != job.content_hash:
+            post.revision += 1
+            post.last_changed_at = observed_at
             summary.updated += 1
         else:
             summary.unchanged += 1
@@ -252,6 +274,7 @@ def apply_snapshot(
         post.canonical_job_url = job.canonical_job_url
         post.apply_url = job.apply_url
         post.description_text = job.description_text
+        post.locations = job.locations
         post.source_updated_at = job.source_updated_at
         post.content_hash = job.content_hash
         post.last_seen_at = max(observed_at, post.first_seen_at)

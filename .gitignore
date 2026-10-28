@@ -14,5 +14,6 @@ data/
 *.sqlite3-*
 .env
 .env.*
+!.env.example
 secrets/
 private/

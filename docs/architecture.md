@@ -1,5 +1,11 @@
 # System Architecture (Proposed v0.1)
 
+> Implementation update: the integrated workflow is now implemented in
+> `sources/`, `discovery/`, `ingestion/`, `screening/`, `reporting/` and
+> `operations/`. [ADR 0008](adr/0008-integrated-personal-workflow.md) supersedes
+> deferred implementation/scheduler statements below. The layout below is the
+> original design, not the current file tree. No server or dashboard was added.
+
 ## Style
 
 **Modular monolith:** one Python codebase and one persistent database, with a scheduler/CLI invoking separable components. No HTTP server is needed in the initial version. See [ADR 0001](adr/0001-modular-monolith.md).
@@ -102,3 +108,23 @@ publishing or deploying. There is still no scheduler or additional service.
 - URLs and provider response fields are untrusted input. Sanitize, validate permitted hosts, enforce bounded payload sizes.
 - The initial data pipeline must remain useful with AI disabled.
 - Source freshness can lag actual employer publication; detect and report that uncertainty.
+
+## Current non-AI operating workflow
+
+The serialized `run-due` command performs discovery (06:00 New York), due source
+polling, conservative relevance alerts, and combined reports (10:00/20:00 New
+York). It never invokes screening, regardless of keys. Reports preserve unknown
+eligibility and distinguish source dates, first discovery and initial baselines.
+
+SMTP uses existing `task_runs` as a grouped durable outbox and `deliveries` for
+per-posting/revision reservations; no schema change is needed. Local artifacts
+survive SMTP failure. Network calls run outside transactions. Ambiguous sending
+requires review rather than automatic replay. Discovery cursors and provenance
+survive restarts. Trusted imports/directories provide bounded free coverage;
+unknown domains require confirmation. See [deployment](deployment.md).
+
+Optional screening uses a durable per-revision queue and multi-job structured
+requests, with separate 09:30/19:30 New York sessions. Its own process lock allows
+polling to proceed during API waits; SQLite transactions remain short. Existing
+workflow tables hold queue, request, token-cache and Pacific quota state. AI is
+disabled by default. See [ADR 0010](adr/0010-multi-job-gemini-screening.md).
