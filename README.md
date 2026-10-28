@@ -58,21 +58,23 @@ uv run jobsfinder-io notify
 uv run jobsfinder-io run-due --candidates data/private/candidates.json
 ```
 
-For limited screening use `screen --posting-id 34 --posting-id 68 --max-calls 8`
+For limited screening use `screen --posting-id 34 --posting-id 68 --max-calls 20`
 with the intended `--db` and `--profile`; repeated IDs select a small batch.
-[Live Gemini verification](docs/gemini-live-verification.md) found service/quota
-failures, so production AI screening has not yet passed acceptance.
+The [final ten-job pilot](docs/activation-pilot.md) passed and the owner approved
+enabled screening configuration. Earlier service/quota reports remain historical.
 
 `screen` now batches up to 10 jobs per request by default. Separate `screen-due`
-sessions target 9:30 AM/7:30 PM New York and remain disabled. See
-[batch configuration and later live-test instructions](docs/gemini-batch-screening.md).
+sessions target 9:30 AM/7:30 PM New York. AI defaults to true/20 calls per Pacific
+day with two reserved calls and eight batches per session. No host schedule has
+been installed. See [batch configuration](docs/gemini-batch-screening.md).
 
 `run-due` performs one scheduled tick. Run every five minutes on an always-on
 host; per-source intervals normally permit hourly polls. Discovery runs at 6 AM;
 US/international reports run at 10 AM/8 PM America/New_York with DST handling.
 Persistent receipts prevent repeats; an OS lock prevents overlapping CLI work
 and enables interrupted-poll recovery. Network calls hold no DB transaction.
-These operating commands never invoke Gemini. Leave `GEMINI_MAX_CALLS=0`.
+`run-due` never invokes Gemini; the separate `screen-due` command does. Explicitly
+set `GEMINI_BATCH_ENABLED=false` and `GEMINI_MAX_CALLS=0` to disable AI.
 
 Screening uses separate US/international policies, two structured Google Gemini review
 stages, exact evidence quotes, private profile/model/prompt version caching and a
@@ -112,7 +114,8 @@ container upgrades. Set Linux UID/GID as described in the deployment guide.
 Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USERNAME`,
 `SMTP_PASSWORD`, `SMTP_FROM`, and your personal `SMTP_TO` for email.
 No credentials are needed for monitoring, imported-page discovery or local reports.
-Search remains optional; AI stays disabled in unattended operation.
+Search remains optional. AI is enabled in configuration; installing its host
+schedule remains a deployment step. Monitoring/reports work without an AI key.
 
 [Deployment instructions](docs/deployment.md) include cron, privacy, persistent
 storage, backups and recovery. No schedule is installed, image published, or

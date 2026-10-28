@@ -106,7 +106,7 @@ def build_parser() -> argparse.ArgumentParser:
                 default=os.getenv("GEMINI_REVIEW_MODEL") or "gemini-3.5-flash-lite",
             )
             command.add_argument(
-                "--max-calls", type=int, default=os.getenv("GEMINI_MAX_CALLS") or 0
+                "--max-calls", type=int, default=os.getenv("GEMINI_MAX_CALLS") or 20
             )
     return parser
 
@@ -155,7 +155,7 @@ def run_workflow(args: argparse.Namespace, engine) -> dict:
             return screen_due(
                 engine,
                 args.profile,
-                enabled=os.getenv("GEMINI_BATCH_ENABLED", "false").lower() == "true",
+                enabled=os.getenv("GEMINI_BATCH_ENABLED", "true").lower() == "true",
                 api_key=os.getenv("GEMINI_API_KEY"),
                 model=args.model or args.review_model,
                 max_calls=args.max_calls,

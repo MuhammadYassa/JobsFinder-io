@@ -79,6 +79,8 @@ def load_batch_config() -> BatchConfig:
     values = {
         field: int(os.environ[name]) for field, name in names.items() if os.getenv(name)
     }
+    # Operational default is deliberately below the model project's 500 RPD.
+    values.setdefault("daily_limit", 20)
     if os.getenv("GEMINI_TOKEN_COUNT_MODE"):
         values["token_count_mode"] = os.environ["GEMINI_TOKEN_COUNT_MODE"]
     return BatchConfig(**values)

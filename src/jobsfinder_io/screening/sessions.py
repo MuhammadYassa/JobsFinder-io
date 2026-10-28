@@ -1,5 +1,6 @@
-"""Opt-in sessions run independently from hourly monitoring and delivery."""
+"""Configured sessions run independently from hourly monitoring and delivery."""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from jobsfinder_io.persistence.models import TaskRun, utc_now
 from jobsfinder_io.screening.batch import screen_batch
+from jobsfinder_io.screening.batch_limits import load_batch_config
 from jobsfinder_io.screening.queue import refresh_queue
 
 
@@ -32,6 +34,7 @@ def screen_due(
         return {"status": "disabled", "api_calls": 0, "queued_candidates": len(jobs)}
     if not slot:
         return {"status": "not_due", "api_calls": 0}
+    config = kwargs.pop("config", None) or load_batch_config()
     with Session(engine) as session, session.begin():
         session.execute(
             update(TaskRun).where(TaskRun.id == -1).values(status="pending")
@@ -39,6 +42,16 @@ def screen_due(
         record = session.scalar(select(TaskRun).where(TaskRun.task_key == slot))
         if record is not None and record.status == "complete":
             return {"status": "already_complete", "api_calls": 0}
+        used_batches = (
+            record.payload.get("session_generation_calls", 0) if record else 0
+        )
+        if used_batches >= config.max_batches:
+            return {
+                "status": "session_budget_exhausted",
+                "api_calls": 0,
+                "session_generation_calls": used_batches,
+                "pending": record.payload.get("pending", 1),
+            }
         if record is None:
             record = TaskRun(
                 task_key=slot, status="pending", started_at=now.astimezone(UTC)
@@ -53,6 +66,7 @@ def screen_due(
             profile_path,
             now=supplied_now,
             deadline=deadline.astimezone(UTC),
+            config=replace(config, max_batches=config.max_batches - used_batches),
             **kwargs,
         )
     except Exception as exc:
@@ -62,6 +76,9 @@ def screen_due(
             "api_calls": 0,
             "pending": 1,
         }
+    result["session_generation_calls"] = used_batches + result.get(
+        "generation_calls", 0
+    )
     with Session(engine) as session, session.begin():
         session.execute(
             update(TaskRun).where(TaskRun.id == -1).values(status="pending")

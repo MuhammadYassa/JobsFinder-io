@@ -3,12 +3,12 @@
 Current primary: `gemini-3.5-flash-lite`. See the
 [one-batch live verification](flash-lite-live-verification.md) and
 [ADR0011](adr/0011-flash-lite-screening.md). The supplied project limits are
-500 RPD / 15 RPM / 250000 input TPM; scheduled screening and the default call
-allowance remain disabled. Older 3.8/20-request records describe the previous configuration.
+500 RPD / 15 RPM / 250000 input TPM. The approved application limit is20calls per
+Pacific day, with2reserved. See [final activation](activation-pilot.md).
 
-Monitoring, email and reports keep working independently. AI is still disabled:
-`GEMINI_BATCH_ENABLED=false`, `GEMINI_MAX_CALLS=0`. Controlled live verification
-is recorded separately; these flags have not enabled unattended screening.
+Monitoring, email and reports keep working independently. AI configuration is
+enabled: `GEMINI_BATCH_ENABLED=true`, `GEMINI_MAX_CALLS=20`, `GEMINI_DAILY_LIMIT=20`.
+No permanent OS schedule has been installed. Set false/0 to disable AI explicitly.
 
 Validation: **372 tests passed**, Ruff clean, Docker build/Compose and offline
 container migrations/CLI checks passed. The real disabled command queued 252
@@ -37,7 +37,8 @@ Changing the evidence/prompt version requires a fresh review; history is retaine
 Successful cache entries also require the current `validation_version`; invalid
 or deferred outcomes never satisfy the cache. See the
 [controlled accuracy evaluation](flash-lite-accuracy-evaluation.md) for remaining
-false-negative risks and the current decision to keep unattended AI disabled.
+false-negative risks. The later final pilot approved capped, human-reviewed
+screening configuration; the host schedule is not active yet.
 
 ## Size and request estimates
 
@@ -54,8 +55,9 @@ Those tests establish serialization/storage, not live accuracy at either size.
 
 These are generation-request estimates, assuming successful complete responses,
 no long-job splits, no cached jobs and no token-count calls. Extra count/retry
-requests consume the same local allowance. The normal 498-request daily allocation
-can accommodate 25 generation requests for 250 uncached jobs if explicitly allowed.
+requests consume the same local allowance. The normal18-call daily allocation
+and8generation batches per session process backlog gradually;250uncached jobs
+span multiple days at the approved settings.
 Invocation/session, RPM/TPM limits and failures can spread work across days.
 No promise of exactly two daily requests or a dollar cost is made.
 

@@ -313,3 +313,16 @@ Final validation: **491 tests passed**, Ruff check/format passed, Docker built
 and loaded; offline container confirmed UID 1000, current v8 proof validation,
 secret exclusion and CLI execution. All 37 current decisions reused with zero
 requests and all 30 evaluation queue records complete. No AI activation occurred.
+
+## Final ten-job pilot and configuration activation — complete
+
+Exactly1generation request,10previously unscreened real jobs,15valid policy
+outcomes,0failures/omissions,15cache hits/0repeat calls. Usage19722input+4187output,
+8.868seconds. Potential matches retained; all hard exclusions quote source proof.
+Enabled private `.env`, Compose/example and CLI configuration: true/20calls/day,
+2reserved,10jobs/batch,8batches/session across ticks; adaptive24000input retained.
+Persistent private profile copied outside OneDrive.8existing scheduler/DST tests,
+offline configuration/quota/session/report smoke checks, Ruff and Compose config
+passed. Local image rebuild unavailable: Docker Desktop stopped. Build on host.
+No permanent OS schedule, cloud provisioning, paid-service activation, commit or
+push. See [pilot handoff](activation-pilot.md).

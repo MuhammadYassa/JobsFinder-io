@@ -1,4 +1,4 @@
-# Operating JobsFinder.io without AI
+# Operating JobsFinder.io
 
 Use one always-on computer or Linux Docker host. Production SQLite must remain
 on persistent local storage outside OneDrive or other sync folders. GitHub
@@ -17,8 +17,12 @@ Actions runs tests only. No schedule or remote deployment is installed here.
    `JOBSFINDER_CANDIDATES=/app/data/private/candidates.json`, and
    `JOBSFINDER_REPORT_DIR=/app/data/reports`.
    Protect the populated `.env` with `chmod 600 .env`.
-4. Leave `GEMINI_MAX_CALLS=0`. Unattended monitoring never invokes AI, even with
-   an old key present. No profile is required for non-AI reports.
+4. The [final pilot passed](activation-pilot.md): AI defaults to enabled, with
+   `GEMINI_MAX_CALLS=20`, `GEMINI_DAILY_LIMIT=20`, retry reserve2 and batch size10.
+   Put the private profile at `/var/lib/jobsfinder/private/profile.json` and set
+   `JOBSFINDER_PROFILE=/app/data/private/profile.json`. To operate without AI,
+   explicitly set `GEMINI_BATCH_ENABLED=false` and `GEMINI_MAX_CALLS=0`.
+   Monitoring/reports remain independent and need no AI profile or key.
 
 ```sh
 cd /opt/jobsfinder
@@ -158,17 +162,15 @@ as the daily configuration. Configure reviewed inputs for continued registry
 growth. A successful test pass does not turn a finite import into internet-wide
 employer discovery.
 
-## Optional batch screening, prepared but disabled
+## Approved batch screening, enabled in configuration
 
 The multi-job implementation is described in [batch screening](gemini-batch-screening.md).
-Keep `GEMINI_BATCH_ENABLED=false` and `GEMINI_MAX_CALLS=0` until the owner approves
-a larger accuracy test and recurring-activation approval. The initial
-[Flash-Lite batch](flash-lite-live-verification.md) passed service/JSON checks
-but retained evidence-coverage concerns. `run-due` only maintains the screening queue;
+The [final pilot](activation-pilot.md) passed and the owner approved enabled
+defaults: true/20,20daily,2reserved,10jobs/batch,8batches/session. `run-due` only maintains the screening queue;
 polling, email and reports do not wait for Gemini.
 
-After separate approval and successful live acceptance, a second five-minute
-cron entry can run `screen-due` on the same always-on host:
+When deploying the always-on host, a second five-minute cron entry can run
+`screen-due`. No permanent schedule has been installed during this task:
 
 ```cron
 */5 * * * * cd /opt/jobsfinder && /usr/bin/docker compose run --rm -T jobsfinder jobsfinder-io screen-due >> /var/lib/jobsfinder/screening.log 2>&1
@@ -180,4 +182,7 @@ may finish later. Reports remain independently available with uncertain
 eligibility labels. The separate screening lock prevents two screeners from
 overlapping without holding the monitoring lock during API waits. Stop **both**
 jobs before migrations/backups/upgrades, and configure quota limits from AI Studio.
-No second cron entry or enabled configuration was installed during development.
+The enabled configuration is prepared; installing both permanent tick commands
+and provisioning persistent hosting remain deployment steps. Rebuild the image
+on the target host. Current smoke checks did not rebuild locally because Docker
+Desktop was stopped.

@@ -84,3 +84,13 @@ pilot, not autonomous eligibility decisions. Saved AI activation remains off.
 References: [model](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite),
 [thinking levels](https://ai.google.dev/gemini-api/docs/thinking),
 [structured output](https://ai.google.dev/gemini-api/docs/structured-output).
+
+## Approved activation after final pilot
+
+The owner's final activation request supersedes the disabled default above.
+One ten-job request returned all15policy outcomes, valid evidence and cached
+results. Set application enablement true, max-calls20 and daily-limit20 with2
+reserved calls, batch size10 and8batches per session. Provider limits remain
+500RPD/15RPM/250000TPM; the application deliberately uses less. Count-token calls
+share the conservative application budget. Session usage persists across ticks.
+No OS schedule or cloud deployment was activated. See [pilot](../activation-pilot.md).

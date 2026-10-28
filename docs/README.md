@@ -6,18 +6,21 @@ Current AI provider: [Google Gemini via the official GenAI SDK](adr/0009-gemini-
 default `gemini-3.5-flash-lite`. Older OpenAI references in build/review records describe
 the pre-migration implementation.
 
-Current operation is explicitly non-AI: SMTP alerts, seven-day reports, hourly
-polling and daily discovery run independently of Gemini. See
+The [final ten-job pilot](activation-pilot.md) passed; Gemini defaults to enabled
+with a conservative20-call application budget. No permanent schedule or cloud
+host is active. SMTP alerts, seven-day reports, hourly polling and daily discovery
+continue independently of Gemini. See
 [non-AI verification](non-ai-verification.md) and [deployment](deployment.md).
 
 [Completed Flash-Lite accuracy evaluation](flash-lite-final-accuracy.md): all30jobs /
 37policy outcomes verified; source-proof gates correct raw false rejections.
-AI remains disabled. A capped, human-reviewed pilot is reasonable; independent
+That evaluation kept AI disabled; the later final pilot approved enabled configuration. Independent
 eligibility/rejection decisions are not accepted.
 
 [Multi-job Gemini screening](gemini-batch-screening.md) adds a durable queue,
-token-aware batches and separate 09:30/19:30 New York sessions. It remains disabled
-by default; its first controlled live result is documented below.
+token-aware batches and separate 09:30/19:30 New York sessions. Current activation
+and limits are documented in the final pilot; earlier verification records below
+retain their historical disabled states.
 
 [Flash-Lite live verification](flash-lite-live-verification.md): one five-job
 batch succeeded with 10 stored policy results and zero-call cache reuse. Larger
