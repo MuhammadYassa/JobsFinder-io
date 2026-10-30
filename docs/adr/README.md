@@ -18,6 +18,9 @@ When approved, change an ADR's status to **Accepted** and record the date. A new
 
 ## Decision status update (2026-10-27)
 
+- [0012 — Pull-based production deployment](0012-pull-based-production-deployment.md)
+  — Accepted by the owner's Azure CI/CD request; supersedes CI-only publishing.
+
 - 0001 — Accepted
 - 0002 — Accepted (implementation remains phased)
 - 0003 — Accepted (implementation deferred beyond Phase 1)

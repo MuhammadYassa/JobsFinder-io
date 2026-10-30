@@ -1,0 +1,32 @@
+services:
+  jobsfinder:
+    image: ${JOBSFINDER_RELEASE_IMAGE:?Digest-pinned release required}
+    pull_policy: never
+    user: "1000:1000"
+    env_file:
+      - path: /etc/jobsfinder/runtime.env
+        format: raw
+    environment:
+      JOBSFINDER_PROFILE: /app/data/private/profile.json
+      JOBSFINDER_CANDIDATES: /app/data/private/candidates.json
+      JOBSFINDER_REPORT_DIR: /app/data/reports
+    volumes:
+      - type: bind
+        source: /var/lib/jobsfinder/data
+        target: /app/data
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: local
+      options:
+        max-size: "5m"
+        max-file: "2"

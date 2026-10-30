@@ -11,7 +11,7 @@ Success means earlier detection, accurate provenance, low false negatives, audit
 ## Project status and decision authority
 
 - Development is complete; the repository is being prepared for Azure deployment. Host provisioning and permanent schedules remain deployment steps. Historical documents tagged **Proposed** are design context, not implementation authorization.
-- **Accepted foundations:** modular Python monolith, SQLite, SQLAlchemy 2.x, Alembic, Docker and CLI scheduling. ADR 0008 extends the original four-table schema with workflow tables; ADRs 0009–0011 record Gemini screening and approved capped activation. Preserve both migrations and all existing history.
+- **Accepted foundations:** modular Python monolith, SQLite, SQLAlchemy 2.x, Alembic, Docker and CLI scheduling. ADR 0008 extends the original four-table schema with workflow tables; ADRs 0009–0011 record Gemini screening and approved capped activation. ADR 0012 adds tested GHCR publishing and outbound Azure updates. Preserve both migrations and all existing history.
 - The human owner chooses architecture and approves maintenance scope. Explain meaningful tradeoffs before major decisions and implement only the requested change.
 - Never silently add new external services, paid APIs, browser automation, authentication, dashboards, or autonomous agents.
 - Keep documentation consistent with code. If a proposed choice changes, update the appropriate ADR with rationale and consequences after approval.

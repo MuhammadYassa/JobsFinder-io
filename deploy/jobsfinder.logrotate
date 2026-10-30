@@ -1,0 +1,9 @@
+/var/log/jobsfinder/*.log {
+    daily
+    maxsize 10M
+    rotate 7
+    compress
+    missingok
+    notifempty
+    create 0600 root root
+}

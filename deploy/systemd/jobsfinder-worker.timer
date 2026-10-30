@@ -1,0 +1,11 @@
+[Unit]
+Description=JobsFinder five-minute application tick
+
+[Timer]
+OnCalendar=*-*-* *:0/5:00
+Persistent=true
+AccuracySec=1s
+Unit=jobsfinder-worker.service
+
+[Install]
+WantedBy=timers.target

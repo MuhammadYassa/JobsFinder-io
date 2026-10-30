@@ -19,6 +19,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY src/ ./src/
 COPY alembic.ini ./
 COPY migrations/ ./migrations/
+COPY deploy/compose.yaml ./deploy/compose.yaml
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable
 

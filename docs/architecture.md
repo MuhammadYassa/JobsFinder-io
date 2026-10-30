@@ -85,6 +85,13 @@ tests/               # offline unit/integration regressions and fixtures
 
 ## Deployment trajectory
 
+Production CI/CD now follows [ADR 0012](adr/0012-pull-based-production-deployment.md):
+tested main images in GHCR, outbound digest-pinned updates, consistent pre-migration
+backups and fail-closed recovery. A separate five-minute systemd worker serializes
+monitoring and screening on the 1 GiB VM. Versioned Compose travels with each
+image; private data/credentials remain protected host files. See
+[Azure setup](azure-cicd.md). Earlier phase descriptions below are historical.
+
 Start as a local CLI + SQLite with **SQLAlchemy 2.x models and Alembic migrations from Phase 1** (ADRs 0004 and 0006). PostgreSQL is a possible later deployment choice, not a current requirement. Avoid scheduling hourly checks from a laptop that may be offline.
 
 Phase 3 adds one Docker Compose CLI service and GitHub Actions CI; see

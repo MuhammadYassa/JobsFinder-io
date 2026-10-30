@@ -11,6 +11,8 @@
 !src/**
 !migrations/
 !migrations/**
+!deploy/
+!deploy/compose.yaml
 
 # Exclude private/generated files even if placed under an allowed directory.
 **/.git

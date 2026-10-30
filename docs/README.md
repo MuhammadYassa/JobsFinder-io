@@ -14,6 +14,7 @@ two reserved retry calls; no permanent host schedule is installed.
 
 | Document | Purpose |
 | --- | --- |
+| [azure-cicd.md](azure-cicd.md) | GHCR publishing, VM pull updates, setup and recovery |
 | [deployment.md](deployment.md) | Azure readiness, configuration, schedules, storage, backups and recovery |
 | [architecture.md](architecture.md) | Current modules, data flow and responsibility boundaries |
 | [roadmap.md](roadmap.md) | Completed scope, remaining deployment steps and optional future work |

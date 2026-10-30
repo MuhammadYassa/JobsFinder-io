@@ -6,6 +6,10 @@ It generates personal job reports and alerts; it never submits applications.
 Development is complete; Azure hosting and permanent schedules still need setup.
 Monitoring, email and reports run independently of optional Gemini screening.
 
+[Azure CI/CD](docs/azure-cicd.md) publishes tested main commits to GHCR. The VM
+pulls approved releases over HTTPS and backs up SQLite before migrations.
+Separate deployment/worker timers need no inbound runner access or on-VM builds.
+
 Supports Greenhouse, Lever (global/EU), and Ashby. Complete polls preserve source
 identity, locations, separate publication/update/discovery/verification times,
 content revisions and historical jobs. First scans are baselines. Two complete
@@ -122,7 +126,8 @@ schedule remains a deployment step. Monitoring/reports work without an AI key.
 [Deployment instructions](docs/deployment.md#azure-deployment-readiness) include Azure readiness, cron, privacy, persistent
 storage, backups and recovery. No schedule is installed, image published, or
 external infrastructure deployed by the project. CI validates the app and Docker;
-it never operates the persistent production database.
+it never operates the persistent production database. Successful main releases
+publish using GitHub's job token; pull requests cannot publish production images.
 
 ## Validation and learning
 

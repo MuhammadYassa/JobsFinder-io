@@ -2,13 +2,19 @@
 
 Use one always-on computer or Linux Docker host. Production SQLite must remain
 on persistent local storage outside OneDrive or other sync folders. GitHub
-Actions runs tests only. No schedule or remote deployment is installed here.
+Actions tests and publishes successful main releases to GHCR. No schedule
+or remote deployment has been activated here.
+
+**Azure production:** follow [pull-based CI/CD setup](azure-cicd.md). It uses
+separate updater/worker timers, tested images instead of on-VM builds, and
+consistent backups before migrations. Manual Compose/build/cron examples below
+remain for local operation; do not combine them with production systemd timers.
 
 ## Azure deployment readiness
 
 The existing Docker/Compose workflow fits a single always-on Azure Linux VM.
-No Azure resources, image registry, deployment automation or schedules are
-provisioned by this repository. The host has not been verified; complete these
+Deployment automation is provided; no Azure resources, registry settings or
+schedules have been activated. The host has not been verified; complete these
 steps before calling the deployment operational:
 
 1. Use persistent managed-disk storage for `/var/lib/jobsfinder`. Never put SQLite
@@ -25,7 +31,8 @@ steps before calling the deployment operational:
    and authenticated SMTP to the configured mail host. Azure documents
    [authenticated SMTP on port 587](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-network/troubleshoot-outbound-smtp-connectivity);
    host firewall and provider acceptance still need verification.
-4. Build the final image on the host. With both schedules stopped, run the
+4. Pull the approved GHCR image on Azure; build locally only for development.
+   With both schedules stopped, run the
    migration, health and local report commands below. Review pending/uncertain
    outbox state before enabling delivery. Send a test email only when authorized
    and confirm inbox receipt. Check model access and actual quota before enabling
@@ -215,4 +222,5 @@ overlapping without holding the monitoring lock during API waits. Stop **both**
 jobs before migrations/backups/upgrades, and configure quota limits from AI Studio.
 The enabled configuration is prepared; installing both permanent tick commands
 and provisioning persistent hosting remain deployment steps. Build the final
-image on the target host before starting either schedule.
+image locally for manual use; on Azure pull the approved GHCR image through the
+production updater before starting either timer.

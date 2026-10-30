@@ -7,6 +7,8 @@ record validation and handoff details. Development is complete; deployment is pe
 
 - [x] Registry, SQLite/SQLAlchemy/Alembic and manual Greenhouse monitoring.
 - [x] Docker packaging and offline GitHub Actions CI.
+- [x] Main-only tested GHCR publishing and pull-based Azure deployment tooling;
+  target-host activation remains pending ([setup](azure-cicd.md)).
 - [x] Lever global/EU and Ashby public adapters, normalized locations/provenance.
 - [x] Safe baseline/new/updated/missing/closed/reappeared reconciliation.
 - [x] Employer candidate imports, official career-page validation and optional search.

@@ -1,0 +1,11 @@
+[Unit]
+Description=Check JobsFinder production image every three minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=3min
+AccuracySec=15s
+Unit=jobsfinder-update.service
+
+[Install]
+WantedBy=timers.target
