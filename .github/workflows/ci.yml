@@ -48,6 +48,7 @@ jobs:
 
       - name: Validate Compose configuration
         run: |
+          docker compose version
           docker compose config --quiet
           uv run --locked --no-sync python deploy/verify_config.py
 

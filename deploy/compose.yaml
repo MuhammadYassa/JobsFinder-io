@@ -4,7 +4,7 @@ services:
     pull_policy: never
     user: "1000:1000"
     env_file:
-      - path: /etc/jobsfinder/runtime.env
+      - path: ${JOBSFINDER_RUNTIME_ENV:-/etc/jobsfinder/runtime.env}
         format: raw
     environment:
       JOBSFINDER_PROFILE: /app/data/private/profile.json

@@ -34,6 +34,11 @@ Store data on the persistent OS/managed disk, never the temporary/resource disk.
 Install Docker Engine and Compose **v2.30+** using
 [Docker's Ubuntu instructions](https://docs.docker.com/engine/install/ubuntu/).
 Compose 2.30+ is needed for literal/raw environment values.
+CI validates using a temporary empty `JOBSFINDER_RUNTIME_ENV` stand-in; production
+defaults to the required `/etc/jobsfinder/runtime.env`. Do not set a stand-in on
+the VM. Compose version and validation errors are included in CI diagnostics.
+The check uses `config --format json`: Compose 2.30.3 does not support the newer
+`--no-env-resolution` flag, so resolving a disposable empty file is intentional.
 
 If Docker is not installed, set up its official apt repository:
 
